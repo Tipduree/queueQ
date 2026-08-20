@@ -1,0 +1,27 @@
+# Render Blueprint — queueQ backend API
+# Deploy: https://dashboard.render.com/blueprints → New Blueprint Instance → connect GitHub repo
+
+services:
+  - type: web
+    name: queueq-api
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: backend
+    buildCommand: >-
+      cd .. &&
+      pnpm install --frozen-lockfile &&
+      pnpm --filter backend exec prisma generate &&
+      pnpm --filter backend run build
+    preDeployCommand: cd .. && pnpm --filter backend exec prisma db push
+    startCommand: pnpm run start:prod
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: FRONTEND_URL
+        value: https://frontend-two-phi-66.vercel.app,http://localhost:3000
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false

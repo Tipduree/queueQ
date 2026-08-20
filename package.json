@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "queueq",
   "version": "1.0.0",
   "private": true,
@@ -8,6 +8,11 @@
     "dev:backend": "pnpm --filter backend start:dev",
     "build:frontend": "pnpm --filter frontend build",
     "build:backend": "pnpm --filter backend build",
-    "dev": "pnpm run --parallel dev:frontend dev:backend"
+    "dev": "pnpm run --parallel dev:frontend dev:backend",
+    "db:generate": "pnpm --filter backend db:generate",
+    "db:migrate": "pnpm --filter backend db:migrate",
+    "db:push": "pnpm --filter backend db:push",
+    "db:seed": "pnpm --filter backend db:seed",
+    "db:studio": "pnpm --filter backend db:studio"
   }
 }
