@@ -4,6 +4,8 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsNumberString,
+  Length,
   Matches,
   Max,
   Min,
@@ -26,7 +28,8 @@ export class CreateBookingDto {
   @IsString()
   guestName!: string;
 
-  @IsString()
+  @IsNumberString()
+  @Length(10, 10)
   guestPhone!: string;
 
   @IsInt()

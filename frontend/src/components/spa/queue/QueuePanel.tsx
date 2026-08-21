@@ -221,9 +221,11 @@ function StepGuest() {
         </span>
         <input
           type="tel"
+          inputMode="numeric"
+          maxLength={10}
           value={guest.phone}
-          placeholder="08x-xxx-xxxx"
-          onChange={(e) => setGuest({ phone: e.target.value })}
+          placeholder="0812345678"
+          onChange={(e) => setGuest({ phone: e.target.value.replace(/\D/g, "") })}
         />
       </label>
 
@@ -459,7 +461,7 @@ export function QueuePanel() {
       : step === 2
         ? selectedTime !== null
         : step === 3
-          ? guest.name.trim().length > 0 && guest.phone.trim().length >= 9
+          ? guest.name.trim().length > 0 && /^\d{10}$/.test(guest.phone.trim())
           : step === 4;
 
   if (!isOpen) return null;

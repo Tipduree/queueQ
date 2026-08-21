@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "../styles/spa.css";
+@import "../styles/queue.css";
 
 *,
 *::before,
