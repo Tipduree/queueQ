@@ -68,7 +68,7 @@ export function PopularTreatments() {
   const { openQueueWithService } = useQueue();
 
   return (
-    <section className="popular">
+    <section className="popular" id="popular">
       <div className="wrap">
         <div className="popular-head">
           <h2>
