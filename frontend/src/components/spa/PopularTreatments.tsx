@@ -2,6 +2,7 @@
 
 import { I18n } from "@/components/spa/I18n";
 import { useQueue } from "@/components/spa/queue/QueueProvider";
+import type { SpaMode } from "@/components/spa/SpaHome";
 import type { CSSProperties } from "react";
 const starIcon = (
   <svg viewBox="0 0 20 20" fill="currentColor">
@@ -64,8 +65,13 @@ const treatments: Treatment[] = [
   },
 ];
 
-export function PopularTreatments() {
+type PopularTreatmentsProps = {
+  mode?: SpaMode;
+};
+
+export function PopularTreatments({ mode = "booking" }: PopularTreatmentsProps) {
   const { openQueueWithService } = useQueue();
+  const isLanding = mode === "landing";
 
   return (
     <section className="popular" id="popular">
@@ -95,14 +101,16 @@ export function PopularTreatments() {
                     <I18n k={tagKey} />
                   </span>
                 ) : null}
-                <button
-                  type="button"
-                  className="add"
-                  aria-label="Add to queue"
-                  onClick={() => openQueueWithService(serviceId)}
-                >
-                  +
-                </button>
+                {isLanding ? null : (
+                  <button
+                    type="button"
+                    className="add"
+                    aria-label="Add to queue"
+                    onClick={() => openQueueWithService(serviceId)}
+                  >
+                    +
+                  </button>
+                )}
               </div>
               <div className="body">
                 <h4>

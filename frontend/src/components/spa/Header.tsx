@@ -2,6 +2,7 @@
 
 import { I18n } from "@/components/spa/I18n";
 import { useQueue } from "@/components/spa/queue/QueueProvider";
+import type { SpaMode } from "@/components/spa/SpaHome";
 
 const navLinks = [
   { href: "#", key: "nav.home", active: true },
@@ -11,8 +12,13 @@ const navLinks = [
   { href: "#contact", key: "nav.contact", active: false },
 ] as const;
 
-export function Header() {
+type HeaderProps = {
+  mode?: SpaMode;
+};
+
+export function Header({ mode = "booking" }: HeaderProps) {
   const { openQueue, cartCount } = useQueue();
+  const isLanding = mode === "landing";
 
   return (
     <header className="site-header">
@@ -39,20 +45,22 @@ export function Header() {
         </nav>
 
         <div className="site-header__actions">
-          <button
-            type="button"
-            className="site-header__queue"
-            aria-label="Open booking queue"
-            onClick={openQueue}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <circle cx="12" cy="12" r="9" />
-              <path d="M12 7v5l3 3" />
-            </svg>
-            {cartCount > 0 ? (
-              <span className="queue-count">{cartCount}</span>
-            ) : null}
-          </button>
+          {isLanding ? null : (
+            <button
+              type="button"
+              className="site-header__queue"
+              aria-label="Open booking queue"
+              onClick={openQueue}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 7v5l3 3" />
+              </svg>
+              {cartCount > 0 ? (
+                <span className="queue-count">{cartCount}</span>
+              ) : null}
+            </button>
+          )}
           <a href="#contact" className="btn-contact">
             <I18n k="nav.contactBtn" />
           </a>

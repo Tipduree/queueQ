@@ -2,10 +2,15 @@
 
 import { I18n } from "@/components/spa/I18n";
 import { useLanguage } from "@/components/spa/LanguageProvider";
-import { LINE_CONTACT_URL } from "@/lib/contact";
+import type { SpaMode } from "@/components/spa/SpaHome";
 
-export function TopBar() {
+type TopBarProps = {
+  mode?: SpaMode;
+};
+
+export function TopBar({ mode = "booking" }: TopBarProps) {
   const { lang, setLang } = useLanguage();
+  const isLanding = mode === "landing";
 
   return (
     <div className="top-bar">
@@ -14,7 +19,7 @@ export function TopBar() {
           ✦
         </span>
         <div className="top-bar__links">
-          <a href={LINE_CONTACT_URL} target="_blank" rel="noopener noreferrer">
+          <a href="#contact">
             <I18n k="top.support" />
           </a>
           <button
@@ -28,12 +33,16 @@ export function TopBar() {
             </svg>
             <I18n k="top.language" />
           </button>
-          <a href="#contact">
-            <I18n k="top.signin" />
-          </a>
-          <a href="#contact" className="top-bar__signup">
-            <I18n k="top.signup" />
-          </a>
+          {isLanding ? null : (
+            <>
+              <a href="#contact">
+                <I18n k="top.signin" />
+              </a>
+              <a href="#contact" className="top-bar__signup">
+                <I18n k="top.signup" />
+              </a>
+            </>
+          )}
         </div>
       </div>
     </div>

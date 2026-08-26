@@ -2,6 +2,7 @@
 
 import { I18n } from "@/components/spa/I18n";
 import { useQueue } from "@/components/spa/queue/QueueProvider";
+import type { SpaMode } from "@/components/spa/SpaHome";
 import type { CSSProperties } from "react";
 
 const categories = [
@@ -54,8 +55,13 @@ const categories = [
   },
 ] as const;
 
-export function ServicesSection() {
+type ServicesSectionProps = {
+  mode?: SpaMode;
+};
+
+export function ServicesSection({ mode = "booking" }: ServicesSectionProps) {
   const { openQueue } = useQueue();
+  const isLanding = mode === "landing";
 
   return (
     <section className="cat" id="services">
@@ -74,31 +80,44 @@ export function ServicesSection() {
           </a>
         </div>
         <div className="cat-grid">
-          {categories.map(({ nameKey, goKey, tint1, tint2, icon }) => (
-            <a
-              key={nameKey}
-              className="cat-card"
-              href="#services"
-              onClick={(e) => {
-                e.preventDefault();
-                openQueue();
-              }}
-              style={
-                {
-                  "--tint1": tint1,
-                  "--tint2": tint2,
-                } as CSSProperties
-              }
-            >
-              <div className="thumb">{icon}</div>
-              <h3>
-                <I18n k={nameKey} />
-              </h3>
-              <span className="go">
-                <I18n k={goKey} />
-              </span>
-            </a>
-          ))}
+          {categories.map(({ nameKey, goKey, tint1, tint2, icon }) => {
+            const cardStyle = {
+              "--tint1": tint1,
+              "--tint2": tint2,
+            } as CSSProperties;
+
+            if (isLanding) {
+              return (
+                <article key={nameKey} className="cat-card cat-card--static" style={cardStyle}>
+                  <div className="thumb">{icon}</div>
+                  <h3>
+                    <I18n k={nameKey} />
+                  </h3>
+                </article>
+              );
+            }
+
+            return (
+              <a
+                key={nameKey}
+                className="cat-card"
+                href="#services"
+                onClick={(e) => {
+                  e.preventDefault();
+                  openQueue();
+                }}
+                style={cardStyle}
+              >
+                <div className="thumb">{icon}</div>
+                <h3>
+                  <I18n k={nameKey} />
+                </h3>
+                <span className="go">
+                  <I18n k={goKey} />
+                </span>
+              </a>
+            );
+          })}
         </div>
       </div>
     </section>

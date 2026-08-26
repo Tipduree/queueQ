@@ -14,6 +14,8 @@ import {
   fetchAvailability,
   fetchServices,
 } from "@/lib/api/queue";
+import { pushBookingConfirmation } from "@/lib/line/push-booking-confirmation";
+import { getLineProfile } from "@/lib/line/session";
 import {
   getDateOptions,
   isSlotPastForDate,
@@ -230,6 +232,7 @@ export function QueueProvider({ children }: { children: ReactNode }) {
     setSubmitError(null);
 
     try {
+      const lineProfile = getLineProfile();
       const booking = await createBooking({
         serviceSlugs: selectedServiceIds,
         bookingDate: toDateString(selectedDate),
@@ -238,10 +241,21 @@ export function QueueProvider({ children }: { children: ReactNode }) {
         guestPhone: guest.phone.trim(),
         guestCount: guest.guests,
         notes: guest.notes.trim() || undefined,
+        lineUserId: lineProfile?.userId,
       });
 
       setQueueNumber(booking.queueNumber);
       setStep("success");
+
+      if (lineProfile) {
+        void pushBookingConfirmation({
+          queueNumber: booking.queueNumber,
+          guestName: guest.name.trim() || lineProfile.displayName,
+          bookingDate: toDateString(selectedDate),
+          timeSlot: selectedTime,
+          totalPrice: booking.totalPrice,
+        });
+      }
     } catch (error) {
       setSubmitError(
         error instanceof Error ? error.message : "Booking failed",

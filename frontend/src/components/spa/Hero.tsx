@@ -4,7 +4,11 @@ import { I18n } from "@/components/spa/I18n";
 import { HeroBookingCard } from "@/components/spa/HeroBookingCard";
 import Image from "next/image";
 
-export function Hero() {
+type HeroProps = {
+  showBookingCard?: boolean;
+};
+
+export function Hero({ showBookingCard = false }: HeroProps) {
   return (
     <section className="hero-ref">
       <div className="wrap hero-ref__inner">
@@ -23,7 +27,7 @@ export function Hero() {
           />
         </div>
 
-        <HeroBookingCard />
+        {showBookingCard ? <HeroBookingCard /> : null}
       </div>
     </section>
   );
