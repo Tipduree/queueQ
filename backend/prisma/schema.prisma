@@ -38,6 +38,7 @@ model Booking {
   guestName     String        @map("guest_name")
   guestPhone    String        @map("guest_phone")
   guestCount    Int           @default(1) @map("guest_count")
+  lineUserId    String?       @map("line_user_id")
   notes         String?
   bookingDate   DateTime      @map("booking_date") @db.Date
   timeSlot      String        @map("time_slot")

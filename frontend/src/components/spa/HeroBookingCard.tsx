@@ -10,7 +10,7 @@ import { isMobileDevice } from "@/lib/liff/mobile";
 import { savePendingBooking } from "@/lib/line/pending-booking";
 import { getLineProfile, type LineProfile } from "@/lib/line/session";
 import { TIME_SLOTS, toDateString } from "@/lib/queue/types";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const TABS = [
   { key: "booking.tab.thai", slug: "thai-traditional" },
@@ -34,24 +34,20 @@ export function HeroBookingCard() {
   const [date, setDate] = useState(toDateString(new Date()));
   const [time, setTime] = useState<string>(TIME_SLOTS[4] ?? "11:00");
   const [guests, setGuests] = useState(1);
-  const [lineProfile, setLineProfile] = useState<LineProfile | null>(null);
+  const [lineProfile] = useState<LineProfile | null>(() =>
+    typeof window === "undefined" ? null : getLineProfile(),
+  );
 
   const liffLoginEnabled = isLiffConfigured();
   const lineLoginEnabled = isLineLoginConfigured();
   const needsLineLogin = (liffLoginEnabled || lineLoginEnabled) && !lineProfile;
 
-  useEffect(() => {
-    setLineProfile(getLineProfile());
-  }, []);
-
-  useEffect(() => {
-    if (services.length === 0) return;
-    setSelectedServiceSlug((current) =>
-      current && services.some((s) => s.id === current)
-        ? current
-        : services[0].id,
-    );
-  }, [services]);
+  const resolvedServiceSlug =
+    services.length === 0
+      ? selectedServiceSlug
+      : selectedServiceSlug && services.some((s) => s.id === selectedServiceSlug)
+        ? selectedServiceSlug
+        : services[0].id;
 
   const handleTabChange = (index: number) => {
     setActiveTab(index);
@@ -65,12 +61,12 @@ export function HeroBookingCard() {
     setGuest({ guests, name: guestName ?? lineProfile?.displayName ?? "" });
     setSelectedDate(new Date(`${date}T12:00:00`));
     setSelectedTime(time);
-    openQueueWithService(selectedServiceSlug || TABS[activeTab]?.slug || TABS[0].slug);
+    openQueueWithService(resolvedServiceSlug || TABS[activeTab]?.slug || TABS[0].slug);
   };
 
   const handleSearch = () => {
     const serviceSlug =
-      selectedServiceSlug ||
+      resolvedServiceSlug ||
       TABS[activeTab]?.slug ||
       TABS[0].slug;
     if (!serviceSlug) return;
@@ -81,7 +77,6 @@ export function HeroBookingCard() {
       window.location.pathname.startsWith("/liff");
 
     if (profile || onLiffPage) {
-      if (profile) setLineProfile(profile);
       openQueueFromCard(profile?.displayName);
       return;
     }
@@ -141,7 +136,7 @@ export function HeroBookingCard() {
               <I18n k="booking.service" />
             </strong>
             <select
-              value={selectedServiceSlug}
+              value={resolvedServiceSlug}
               onChange={(e) => setSelectedServiceSlug(e.target.value)}
               disabled={servicesLoading && services.length === 0}
               aria-label="Treatment"
@@ -241,7 +236,7 @@ export function HeroBookingCard() {
           className={`booking-card__search${needsLineLogin ? " booking-card__search--line" : ""}`}
           aria-label={needsLineLogin ? t("booking.lineLogin") : t("booking.search")}
           onClick={handleSearch}
-          disabled={!(liffLoginEnabled || lineLoginEnabled) && (!selectedServiceSlug || servicesLoading)}
+          disabled={!(liffLoginEnabled || lineLoginEnabled) && (!resolvedServiceSlug || servicesLoading)}
         >
           {needsLineLogin ? (
             <LineIcon />

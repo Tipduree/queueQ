@@ -285,6 +285,25 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+  z-index: 3;
+}
+
+.spa.spa--ref .booking-field__hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.72rem;
+  color: #b45309;
+}
+
+.spa.spa--ref .booking-card__search--line {
+  background: #06c755;
+}
+
+.spa.spa--ref .booking-card__search--line:hover {
+  background: #05b34c;
 }
 
 .spa.spa--ref .booking-card__search svg {
@@ -446,4 +465,21 @@
   .spa.spa--ref .hero-ref {
     padding-top: 28px;
   }
+}
+
+.spa.spa--ref .cat-card--static {
+  cursor: default;
+}
+
+.spa.spa--ref .line-contact--text {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.spa.spa--ref .line-contact__hint {
+  opacity: 0.75;
+  font-size: 0.92em;
 }

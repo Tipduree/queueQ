@@ -694,14 +694,14 @@ body.spa.lang-th .spa .logo .word {
 .spa footer {
   background: var(--olive-deep);
   color: #dad9c6;
-  padding: 60px 0 26px;
+  padding: 30px 0 26px;
 }
 
 .spa .footer-top {
   display: grid;
   grid-template-columns: 1.3fr 1fr 1fr;
   gap: 40px;
-  margin-bottom: 44px;
+  margin-bottom: 24px;
 }
 
 .spa .footer-top .logo .word,

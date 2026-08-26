@@ -24,6 +24,7 @@ export type CreateBookingPayload = {
   guestPhone: string;
   guestCount: number;
   notes?: string;
+  lineUserId?: string;
 };
 
 export type BookingResponse = {

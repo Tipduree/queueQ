@@ -1,5 +1,8 @@
 import type { NextConfig } from "next";
 
+const backendUrl =
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+
 const nextConfig: NextConfig = {
   reactCompiler: true,
   images: {
@@ -9,6 +12,14 @@ const nextConfig: NextConfig = {
         hostname: "images.unsplash.com",
       },
     ],
+  },
+  async rewrites() {
+    return [
+      {
+        source: "/api/backend/:path*",
+        destination: `${backendUrl}/:path*`,
+      },
+    ];
   },
 };
 
