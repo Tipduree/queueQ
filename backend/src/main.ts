@@ -2,14 +2,15 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
 import { AppModule } from './app.module';
+import { PrismaClientExceptionFilter } from './prisma/prisma-client-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const defaultOrigins = [
     'http://localhost:3000',
-    'https://frontend-two-phi-66.vercel.app',
     'https://queue-q-frontend.vercel.app',
+    'https://frontend-two-phi-66.vercel.app',
   ];
 
   const configuredOrigins = (process.env.FRONTEND_URL ?? '')
@@ -48,6 +49,8 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  app.useGlobalFilters(new PrismaClientExceptionFilter());
 
   const port = Number(process.env.PORT ?? 3001);
   await app.listen(port, '0.0.0.0');

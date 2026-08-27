@@ -20,7 +20,7 @@ services:
       - key: NODE_VERSION
         value: "20"
       - key: FRONTEND_URL
-        value: https://frontend-two-phi-66.vercel.app,http://localhost:3000
+        value: https://queue-q-frontend.vercel.app,http://localhost:3000
       - key: DATABASE_URL
         sync: false
       - key: DIRECT_URL

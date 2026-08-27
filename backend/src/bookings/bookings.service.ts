@@ -111,7 +111,9 @@ export class BookingsService {
         guestName: dto.guestName.trim(),
         guestPhone: dto.guestPhone.trim(),
         guestCount: dto.guestCount,
-        lineUserId: dto.lineUserId?.trim() || null,
+        ...(dto.lineUserId?.trim()
+          ? { lineUserId: dto.lineUserId.trim() }
+          : {}),
         notes: dto.notes?.trim() || null,
         bookingDate,
         timeSlot: dto.timeSlot,
