@@ -30,17 +30,13 @@ export function SpaHome({ mode = "landing" }: SpaHomeProps) {
   return (
     <LanguageProvider>
       <QueueProvider>
-        {isBooking ? (
-          <>
-            <LineAuthBridge />
-            <LiffResumeBridge />
-          </>
-        ) : null}
+        <LineAuthBridge />
+        {isBooking ? <LiffResumeBridge /> : null}
         <div className="spa spa--ref">
           {isBooking ? null : <AnnouncementBar />}
           <Header mode={mode} />
           <TopBar mode={mode} />
-          <Hero showBookingCard={isBooking} />
+          <Hero showBookingCard />
           {isBooking ? null : <FeatureStrip />}
           <SupportSection />
           <HighlightSection />
@@ -48,7 +44,7 @@ export function SpaHome({ mode = "landing" }: SpaHomeProps) {
           <PopularTreatments mode={mode} />
           <Footer mode={mode} />
           {!isBooking ? <LineFloatButton /> : null}
-          {isBooking ? <QueuePanel /> : null}
+          <QueuePanel />
         </div>
       </QueueProvider>
     </LanguageProvider>
