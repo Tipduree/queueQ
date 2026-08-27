@@ -7,6 +7,7 @@ import { Header } from "@/components/spa/Header";
 import { Hero } from "@/components/spa/Hero";
 import { HighlightSection } from "@/components/spa/HighlightSection";
 import { LanguageProvider } from "@/components/spa/LanguageProvider";
+import { LiffResumeBridge } from "@/components/liff/LiffResumeBridge";
 import { LineAuthBridge } from "@/components/spa/line/LineAuthBridge";
 import { LineFloatButton } from "@/components/spa/LineFloatButton";
 import { PopularTreatments } from "@/components/spa/PopularTreatments";
@@ -29,7 +30,12 @@ export function SpaHome({ mode = "landing" }: SpaHomeProps) {
   return (
     <LanguageProvider>
       <QueueProvider>
-        {isBooking ? <LineAuthBridge /> : null}
+        {isBooking ? (
+          <>
+            <LineAuthBridge />
+            <LiffResumeBridge />
+          </>
+        ) : null}
         <div className="spa spa--ref">
           {isBooking ? null : <AnnouncementBar />}
           <Header mode={mode} />

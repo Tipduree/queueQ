@@ -1,7 +1,8 @@
 import { getLiffId } from "@/lib/liff/config";
 import type { LineProfile } from "@/lib/line/types";
 
-let initPromise: Promise<typeof import("@line/liff").default> | null = null;
+let liffModulePromise: Promise<typeof import("@line/liff").default> | null =
+  null;
 
 function getLiffRedirectUri(): string {
   return `${window.location.origin}${window.location.pathname}`;
@@ -19,15 +20,24 @@ function formatLiffError(error: unknown, phase: string): Error {
     typeof window !== "undefined" ? window.location.origin : "your-domain";
 
   return new Error(
-    `${phase}: ${detail}. Check LINE Console → LIFF → Endpoint URL = ${origin}/liff`,
+    `${phase}: ${detail}. LINE Console → LIFF → Endpoint URL must be ${origin}/liff (no trailing slash).`,
   );
 }
 
+function resetLiffModulePromise(): void {
+  liffModulePromise = null;
+}
+
 export async function getLiff() {
-  if (!initPromise) {
-    initPromise = import("@line/liff").then((mod) => mod.default);
+  if (!liffModulePromise) {
+    liffModulePromise = import("@line/liff")
+      .then((mod) => mod.default)
+      .catch((error) => {
+        resetLiffModulePromise();
+        throw formatLiffError(error, "LIFF SDK load failed");
+      });
   }
-  return initPromise;
+  return liffModulePromise;
 }
 
 export async function initLiff(): Promise<typeof import("@line/liff").default> {
@@ -42,6 +52,7 @@ export async function initLiff(): Promise<typeof import("@line/liff").default> {
   try {
     await liff.init({ liffId });
   } catch (error) {
+    resetLiffModulePromise();
     throw formatLiffError(error, "LIFF init failed");
   }
   return liff;
@@ -52,7 +63,13 @@ export async function ensureLiffLogin(): Promise<LineProfile> {
 
   if (!liff.isLoggedIn()) {
     try {
-      liff.login({ redirectUri: getLiffRedirectUri() });
+      // In LINE in-app browser, omit redirectUri — LINE uses the current page.
+      // Custom redirectUri often causes "couldn't load" redirect loops on mobile.
+      if (liff.isInClient()) {
+        liff.login();
+      } else {
+        liff.login({ redirectUri: getLiffRedirectUri() });
+      }
     } catch (error) {
       throw formatLiffError(error, "LIFF login failed");
     }
