@@ -9,6 +9,7 @@ async function bootstrap() {
   const defaultOrigins = [
     'http://localhost:3000',
     'https://frontend-two-phi-66.vercel.app',
+    'https://queue-q-frontend.vercel.app',
   ];
 
   const configuredOrigins = (process.env.FRONTEND_URL ?? '')

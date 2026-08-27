@@ -76,7 +76,15 @@ export function LiffApp() {
     return (
       <main className="legal-page">
         <div className="wrap">
-          <p>LIFF error: {errorMessage ?? "Unknown error"}</p>
+          <p>LIFF error</p>
+          <p style={{ marginTop: "0.75rem", lineHeight: 1.6 }}>
+            {errorMessage ?? "Unknown error"}
+          </p>
+          <p style={{ marginTop: "1rem", opacity: 0.85, lineHeight: 1.6 }}>
+            Open from LINE app (Rich Menu or liff.line.me link). In LINE
+            Developers → LIFF → Endpoint URL must be{" "}
+            <strong>{typeof window !== "undefined" ? `${window.location.origin}/liff` : "https://queue-q-frontend.vercel.app/liff"}</strong>
+          </p>
         </div>
       </main>
     );

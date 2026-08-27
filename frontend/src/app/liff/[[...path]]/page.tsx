@@ -1,5 +1,5 @@
-import { LiffApp } from "@/components/liff/LiffApp";
+import { LiffPageClient } from "@/components/liff/LiffPageClient";
 
 export default function LiffPage() {
-  return <LiffApp />;
+  return <LiffPageClient />;
 }

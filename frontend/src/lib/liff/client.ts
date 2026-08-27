@@ -3,6 +3,26 @@ import type { LineProfile } from "@/lib/line/types";
 
 let initPromise: Promise<typeof import("@line/liff").default> | null = null;
 
+function getLiffRedirectUri(): string {
+  return `${window.location.origin}${window.location.pathname}`;
+}
+
+function formatLiffError(error: unknown, phase: string): Error {
+  const detail =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : "Unknown error";
+
+  const origin =
+    typeof window !== "undefined" ? window.location.origin : "your-domain";
+
+  return new Error(
+    `${phase}: ${detail}. Check LINE Console → LIFF → Endpoint URL = ${origin}/liff`,
+  );
+}
+
 export async function getLiff() {
   if (!initPromise) {
     initPromise = import("@line/liff").then((mod) => mod.default);
@@ -13,11 +33,17 @@ export async function getLiff() {
 export async function initLiff(): Promise<typeof import("@line/liff").default> {
   const liffId = getLiffId();
   if (!liffId) {
-    throw new Error("LIFF is not configured");
+    throw new Error(
+      "LIFF is not configured (NEXT_PUBLIC_LIFF_ID missing). Add it in Vercel env and redeploy.",
+    );
   }
 
   const liff = await getLiff();
-  await liff.init({ liffId });
+  try {
+    await liff.init({ liffId });
+  } catch (error) {
+    throw formatLiffError(error, "LIFF init failed");
+  }
   return liff;
 }
 
@@ -25,16 +51,24 @@ export async function ensureLiffLogin(): Promise<LineProfile> {
   const liff = await initLiff();
 
   if (!liff.isLoggedIn()) {
-    liff.login({ redirectUri: window.location.href });
+    try {
+      liff.login({ redirectUri: getLiffRedirectUri() });
+    } catch (error) {
+      throw formatLiffError(error, "LIFF login failed");
+    }
     throw new Error("LIFF_LOGIN_REDIRECT");
   }
 
-  const profile = await liff.getProfile();
-  return {
-    userId: profile.userId,
-    displayName: profile.displayName,
-    pictureUrl: profile.pictureUrl,
-  };
+  try {
+    const profile = await liff.getProfile();
+    return {
+      userId: profile.userId,
+      displayName: profile.displayName,
+      pictureUrl: profile.pictureUrl,
+    };
+  } catch (error) {
+    throw formatLiffError(error, "LIFF profile failed");
+  }
 }
 
 export async function getLiffAccessToken(): Promise<string | null> {
