@@ -1,5 +1,9 @@
--- Run in Neon SQL Editor if Render preDeploy db push did not run.
--- Safe to run multiple times (IF NOT EXISTS).
+-- Neon SQL Editor: select branch "main" (top-left) before running.
+-- Safe to run multiple times.
 
 ALTER TABLE "bookings" ADD COLUMN IF NOT EXISTS "line_user_id" TEXT;
-ALTER TABLE "bookings" ADD COLUMN IF NOT EXISTS "guest_count" INTEGER NOT NULL DEFAULT 1;
+
+-- Verify (should return line_user_id):
+-- SELECT column_name FROM information_schema.columns
+-- WHERE table_schema = 'public' AND table_name = 'bookings'
+-- ORDER BY column_name;

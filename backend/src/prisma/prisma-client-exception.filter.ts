@@ -29,12 +29,18 @@ export class PrismaClientExceptionFilter implements ExceptionFilter {
         status = HttpStatus.CONFLICT;
         message = 'A record with this value already exists';
         break;
-      case 'P2021':
-      case 'P2022':
+      case 'P2021': {
         status = HttpStatus.SERVICE_UNAVAILABLE;
-        message =
-          'Database schema is out of date — redeploy the backend (Render preDeploy runs prisma db push)';
+        const table = String(exception.meta?.modelName ?? exception.meta?.table ?? 'unknown');
+        message = `Database table "${table}" is missing — run sync SQL in Neon SQL Editor (primary branch)`;
         break;
+      }
+      case 'P2022': {
+        status = HttpStatus.SERVICE_UNAVAILABLE;
+        const column = String(exception.meta?.column ?? 'unknown');
+        message = `Database column "${column}" is missing — add it in Neon SQL Editor on the primary branch`;
+        break;
+      }
       default:
         message = `Database error (${exception.code})`;
     }
