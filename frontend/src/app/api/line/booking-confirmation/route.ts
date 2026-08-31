@@ -18,12 +18,12 @@ function buildConfirmationText(params: {
 }): string {
   const price = params.totalPrice.toLocaleString("th-TH");
   return (
-    `ยืนยันการจองแล้วค่ะ ${params.displayName} ✅\n\n` +
+    `ได้รับการจองแล้วค่ะ ${params.displayName} 📝\n\n` +
     `เลขคิว: ${params.queueNumber}\n` +
     `วันที่: ${params.bookingDate}\n` +
     `เวลา: ${params.timeSlot}\n` +
     `ยอดรวม: ${price} บาท\n\n` +
-    `กรุณามาถึงก่อนเวลานัด 10 นาทีค่ะ`
+    `ร้านจะยืนยันอีกครั้งผ่าน LINE เมื่อตรวจสอบคิวแล้วค่ะ`
   );
 }
 

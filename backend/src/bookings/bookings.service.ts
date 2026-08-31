@@ -4,8 +4,18 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import type { BookingStatus } from '@prisma/client';
+import { LinePushService } from '../line/line-push.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { UpdateBookingScheduleDto } from './dto/update-booking-schedule.dto';
+
+const STATUS_SORT_ORDER: Record<BookingStatus, number> = {
+  PENDING: 0,
+  CONFIRMED: 1,
+  COMPLETED: 2,
+  CANCELLED: 3,
+};
 
 function generateQueueNumber(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -34,7 +44,10 @@ function isSlotInPast(bookingDate: string, timeSlot: string, now = new Date()) {
 
 @Injectable()
 export class BookingsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly linePush: LinePushService,
+  ) {}
 
   async getAvailability(date: string) {
     const bookingDate = new Date(`${date}T00:00:00.000Z`);
@@ -158,5 +171,123 @@ export class BookingsService {
         },
       },
     });
+  }
+
+  async findForAdmin(date: string) {
+    const bookingDate = new Date(`${date}T00:00:00.000Z`);
+    const bookings = await this.prisma.booking.findMany({
+      where: { bookingDate },
+      include: {
+        items: {
+          include: { service: true },
+        },
+      },
+    });
+
+    return bookings.sort((a, b) => {
+      const statusDiff = STATUS_SORT_ORDER[a.status] - STATUS_SORT_ORDER[b.status];
+      if (statusDiff !== 0) return statusDiff;
+      return a.timeSlot.localeCompare(b.timeSlot);
+    });
+  }
+
+  async updateStatus(id: string, status: BookingStatus, notify = true) {
+    const existing = await this.prisma.booking.findUnique({
+      where: { id },
+      include: { items: { include: { service: true } } },
+    });
+    if (!existing) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    const booking = await this.prisma.booking.update({
+      where: { id },
+      data: { status },
+      include: { items: { include: { service: true } } },
+    });
+
+    if (notify && existing.lineUserId) {
+      await this.notifyStatusChange(existing, status);
+    }
+
+    return booking;
+  }
+
+  async updateSchedule(id: string, dto: UpdateBookingScheduleDto) {
+    const existing = await this.prisma.booking.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    if (isSlotInPast(dto.bookingDate, dto.timeSlot)) {
+      throw new BadRequestException('Cannot move booking to a past time slot');
+    }
+
+    const bookingDate = new Date(`${dto.bookingDate}T00:00:00.000Z`);
+    const booking = await this.prisma.booking.update({
+      where: { id },
+      data: {
+        bookingDate,
+        timeSlot: dto.timeSlot,
+      },
+      include: { items: { include: { service: true } } },
+    });
+
+    if (dto.notify !== false && existing.lineUserId) {
+      const dateLabel = dto.bookingDate;
+      await this.linePush.pushText({
+        lineUserId: existing.lineUserId,
+        text:
+          `เลื่อนการจอง ${existing.queueNumber} แล้วค่ะ\n\n` +
+          `วันที่ใหม่: ${dateLabel}\n` +
+          `เวลาใหม่: ${dto.timeSlot}\n\n` +
+          `หากมีข้อสงสัย ติดต่อร้านได้เลยค่ะ`,
+      });
+    }
+
+    return booking;
+  }
+
+  private async notifyStatusChange(
+    booking: {
+      queueNumber: string;
+      guestName: string;
+      bookingDate: Date;
+      timeSlot: string;
+      totalPrice: number;
+      lineUserId: string | null;
+    },
+    status: BookingStatus,
+  ) {
+    if (!booking.lineUserId) return;
+
+    const dateLabel = booking.bookingDate.toISOString().slice(0, 10);
+    const price = booking.totalPrice.toLocaleString('th-TH');
+    let text: string | null = null;
+
+    if (status === 'CONFIRMED') {
+      text =
+        `ยืนยันการจองแล้วค่ะ ${booking.guestName} ✅\n\n` +
+        `เลขคิว: ${booking.queueNumber}\n` +
+        `วันที่: ${dateLabel}\n` +
+        `เวลา: ${booking.timeSlot}\n` +
+        `ยอดรวม: ${price} บาท\n\n` +
+        `กรุณามาถึงก่อนเวลานัด 10 นาทีค่ะ`;
+    } else if (status === 'CANCELLED') {
+      text =
+        `การจอง ${booking.queueNumber} ถูกยกเลิกแล้วค่ะ\n\n` +
+        `วันที่: ${dateLabel}\n` +
+        `เวลา: ${booking.timeSlot}\n\n` +
+        `หากต้องการจองใหม่ สามารถจองผ่าน LINE ได้เลยค่ะ`;
+    } else if (status === 'COMPLETED') {
+      text =
+        `ขอบคุณที่ใช้บริการค่ะ ${booking.guestName} 🙏\n\n` +
+        `เลขคิว: ${booking.queueNumber}\n` +
+        `หวังว่าจะได้ดูแลอีกครั้งนะคะ`;
+    }
+
+    if (text) {
+      await this.linePush.pushText({ lineUserId: booking.lineUserId, text });
+    }
   }
 }
