@@ -33,8 +33,14 @@ export class AppController {
   /** Debug: verify ADMIN_API_KEY is loaded (does not expose the key). */
   @Get('health/admin')
   getAdminHealth() {
+    const raw = process.env.ADMIN_API_KEY;
     return {
-      adminApiKeyConfigured: Boolean(process.env.ADMIN_API_KEY?.trim()),
+      adminApiKeyConfigured: Boolean(raw?.trim()),
+      adminKeyPresent: raw !== undefined,
+      adminKeyLength: raw?.length ?? 0,
+      adminEnvKeys: Object.keys(process.env).filter((key) =>
+        key.toUpperCase().includes('ADMIN'),
+      ),
     };
   }
 }
