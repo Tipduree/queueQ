@@ -4,7 +4,6 @@ import {
   adminLogin,
   adminLogout,
   fetchAdminBookings,
-  updateAdminBookingSchedule,
   updateAdminBookingStatusWithSchedule,
   type AdminBookingRecord,
 } from "@/lib/admin/api";
@@ -238,7 +237,9 @@ export function AdminBookingsClient() {
 
                 {canManage ? (
                   <div className="admin-schedule">
-                    <p className="admin-schedule__label">แก้ไขวัน/เวลา</p>
+                    <p className="admin-schedule__label">
+                      แก้ไขวัน/เวลา (กดยืนยันเพื่อบันทึกและยืนยันคิว)
+                    </p>
                     <div className="admin-schedule__fields">
                       <input
                         type="date"
@@ -265,23 +266,6 @@ export function AdminBookingsClient() {
                           </option>
                         ))}
                       </select>
-                      <button
-                        type="button"
-                        className="admin-btn"
-                        disabled={isBusy}
-                        onClick={() =>
-                          void runAction(booking.id, () =>
-                            updateAdminBookingSchedule(
-                              booking.id,
-                              draft.date,
-                              draft.time,
-                              true,
-                            ),
-                          )
-                        }
-                      >
-                        บันทึกเวลา
-                      </button>
                     </div>
                   </div>
                 ) : null}
