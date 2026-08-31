@@ -206,8 +206,8 @@ export class BookingsService {
       include: { items: { include: { service: true } } },
     });
 
-    if (notify && existing.lineUserId) {
-      await this.notifyStatusChange(existing, status);
+    if (notify && booking.lineUserId) {
+      await this.notifyStatusChange(booking, status);
     }
 
     return booking;

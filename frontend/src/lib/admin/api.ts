@@ -112,6 +112,28 @@ export async function updateAdminBookingSchedule(
   }
 }
 
+export function bookingScheduleChanged(
+  booking: AdminBookingRecord,
+  bookingDate: string,
+  timeSlot: string,
+): boolean {
+  return booking.bookingDate.slice(0, 10) !== bookingDate || booking.timeSlot !== timeSlot;
+}
+
+/** Save pending schedule edits silently, then update status with one LINE push. */
+export async function updateAdminBookingStatusWithSchedule(
+  booking: AdminBookingRecord,
+  status: AdminBookingRecord["status"],
+  bookingDate: string,
+  timeSlot: string,
+  notify = true,
+): Promise<void> {
+  if (bookingScheduleChanged(booking, bookingDate, timeSlot)) {
+    await updateAdminBookingSchedule(booking.id, bookingDate, timeSlot, false);
+  }
+  await updateAdminBookingStatus(booking.id, status, notify);
+}
+
 export async function adminLogin(password: string): Promise<void> {
   const res = await fetch(
     "/api/admin/login",

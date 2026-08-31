@@ -5,7 +5,7 @@ import {
   adminLogout,
   fetchAdminBookings,
   updateAdminBookingSchedule,
-  updateAdminBookingStatus,
+  updateAdminBookingStatusWithSchedule,
   type AdminBookingRecord,
 } from "@/lib/admin/api";
 import { TIME_SLOTS, toDateString } from "@/lib/queue/types";
@@ -289,7 +289,13 @@ export function AdminBookingsClient() {
                       disabled={isBusy}
                       onClick={() =>
                         void runAction(booking.id, () =>
-                          updateAdminBookingStatus(booking.id, "CONFIRMED", true),
+                          updateAdminBookingStatusWithSchedule(
+                            booking,
+                            "CONFIRMED",
+                            draft.date,
+                            draft.time,
+                            true,
+                          ),
                         )
                       }
                     >
@@ -303,7 +309,13 @@ export function AdminBookingsClient() {
                       disabled={isBusy}
                       onClick={() =>
                         void runAction(booking.id, () =>
-                          updateAdminBookingStatus(booking.id, "COMPLETED", true),
+                          updateAdminBookingStatusWithSchedule(
+                            booking,
+                            "COMPLETED",
+                            draft.date,
+                            draft.time,
+                            true,
+                          ),
                         )
                       }
                     >
@@ -317,7 +329,13 @@ export function AdminBookingsClient() {
                       disabled={isBusy}
                       onClick={() =>
                         void runAction(booking.id, () =>
-                          updateAdminBookingStatus(booking.id, "CANCELLED", true),
+                          updateAdminBookingStatusWithSchedule(
+                            booking,
+                            "CANCELLED",
+                            draft.date,
+                            draft.time,
+                            true,
+                          ),
                         )
                       }
                     >
