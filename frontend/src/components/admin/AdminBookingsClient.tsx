@@ -314,7 +314,7 @@ export function AdminBookingsClient() {
                             "COMPLETED",
                             draft.date,
                             draft.time,
-                            true,
+                            false,
                           ),
                         )
                       }

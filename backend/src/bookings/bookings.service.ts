@@ -279,11 +279,6 @@ export class BookingsService {
         `วันที่: ${dateLabel}\n` +
         `เวลา: ${booking.timeSlot}\n\n` +
         `หากต้องการจองใหม่ สามารถจองผ่าน LINE ได้เลยค่ะ`;
-    } else if (status === 'COMPLETED') {
-      text =
-        `ขอบคุณที่ใช้บริการค่ะ ${booking.guestName} 🙏\n\n` +
-        `เลขคิว: ${booking.queueNumber}\n` +
-        `หวังว่าจะได้ดูแลอีกครั้งนะคะ`;
     }
 
     if (text) {
