@@ -29,4 +29,12 @@ export class AppController {
       bookingColumns: names,
     };
   }
+
+  /** Debug: verify ADMIN_API_KEY is loaded (does not expose the key). */
+  @Get('health/admin')
+  getAdminHealth() {
+    return {
+      adminApiKeyConfigured: Boolean(process.env.ADMIN_API_KEY?.trim()),
+    };
+  }
 }
