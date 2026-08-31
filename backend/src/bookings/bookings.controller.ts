@@ -16,6 +16,11 @@ export class BookingsController {
     return this.bookingsService.create(dto);
   }
 
+  @Get('by-line/:lineUserId')
+  findByLineUser(@Param('lineUserId') lineUserId: string) {
+    return this.bookingsService.findByLineUserId(lineUserId);
+  }
+
   @Get(':queueNumber')
   findOne(@Param('queueNumber') queueNumber: string) {
     return this.bookingsService.findByQueueNumber(queueNumber);

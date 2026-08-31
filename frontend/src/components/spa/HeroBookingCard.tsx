@@ -1,14 +1,9 @@
 "use client";
 
 import { I18n } from "@/components/spa/I18n";
-import { LineIcon } from "@/components/spa/line/LineIcon";
 import { useLanguage } from "@/components/spa/LanguageProvider";
 import { useQueue } from "@/components/spa/queue/QueueProvider";
-import { isLineLoginConfigured, startLineLogin } from "@/lib/line/auth";
-import { getLiffEntryUrl, isLiffConfigured } from "@/lib/liff/config";
-import { isMobileDevice } from "@/lib/liff/mobile";
-import { savePendingBooking } from "@/lib/line/pending-booking";
-import { getLineProfile, type LineProfile } from "@/lib/line/session";
+import { getLineProfile } from "@/lib/line/session";
 import { TIME_SLOTS, toDateString } from "@/lib/queue/types";
 import { useState } from "react";
 
@@ -34,13 +29,6 @@ export function HeroBookingCard() {
   const [date, setDate] = useState(toDateString(new Date()));
   const [time, setTime] = useState<string>(TIME_SLOTS[4] ?? "11:00");
   const [guests, setGuests] = useState(1);
-  const [lineProfile] = useState<LineProfile | null>(() =>
-    typeof window === "undefined" ? null : getLineProfile(),
-  );
-
-  const liffLoginEnabled = isLiffConfigured();
-  const lineLoginEnabled = isLineLoginConfigured();
-  const needsLineLogin = (liffLoginEnabled || lineLoginEnabled) && !lineProfile;
 
   const resolvedServiceSlug =
     services.length === 0
@@ -57,13 +45,6 @@ export function HeroBookingCard() {
     }
   };
 
-  const openQueueFromCard = (guestName?: string) => {
-    setGuest({ guests, name: guestName ?? lineProfile?.displayName ?? "" });
-    setSelectedDate(new Date(`${date}T12:00:00`));
-    setSelectedTime(time);
-    openQueueWithService(resolvedServiceSlug || TABS[activeTab]?.slug || TABS[0].slug);
-  };
-
   const handleSearch = () => {
     const serviceSlug =
       resolvedServiceSlug ||
@@ -72,38 +53,10 @@ export function HeroBookingCard() {
     if (!serviceSlug) return;
 
     const profile = getLineProfile();
-    const onLiffPage =
-      typeof window !== "undefined" &&
-      window.location.pathname.startsWith("/liff");
-
-    if (profile || onLiffPage) {
-      openQueueFromCard(profile?.displayName);
-      return;
-    }
-
-    if (liffLoginEnabled && isMobileDevice() && !onLiffPage) {
-      savePendingBooking({
-        serviceSlug,
-        date,
-        time,
-        guests,
-      });
-      window.location.assign(getLiffEntryUrl());
-      return;
-    }
-
-    if (lineLoginEnabled) {
-      savePendingBooking({
-        serviceSlug,
-        date,
-        time,
-        guests,
-      });
-      startLineLogin();
-      return;
-    }
-
-    openQueueFromCard();
+    setGuest({ guests, name: profile?.displayName ?? "" });
+    setSelectedDate(new Date(`${date}T12:00:00`));
+    setSelectedTime(time);
+    openQueueWithService(serviceSlug);
   };
 
   return (
@@ -233,19 +186,15 @@ export function HeroBookingCard() {
 
         <button
           type="button"
-          className={`booking-card__search${needsLineLogin ? " booking-card__search--line" : ""}`}
-          aria-label={needsLineLogin ? t("booking.lineLogin") : t("booking.search")}
+          className="booking-card__search"
+          aria-label={t("booking.search")}
           onClick={handleSearch}
-          disabled={!(liffLoginEnabled || lineLoginEnabled) && (!resolvedServiceSlug || servicesLoading)}
+          disabled={!resolvedServiceSlug || servicesLoading}
         >
-          {needsLineLogin ? (
-            <LineIcon />
-          ) : (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="11" cy="11" r="7" />
-              <path d="m21 21-4.3-4.3" />
-            </svg>
-          )}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
         </button>
       </div>
     </div>

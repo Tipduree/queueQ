@@ -144,4 +144,19 @@ export class BookingsService {
       },
     });
   }
+
+  findByLineUserId(lineUserId: string) {
+    return this.prisma.booking.findMany({
+      where: {
+        lineUserId,
+        status: { not: 'CANCELLED' },
+      },
+      orderBy: [{ bookingDate: 'desc' }, { timeSlot: 'desc' }],
+      include: {
+        items: {
+          include: { service: true },
+        },
+      },
+    });
+  }
 }

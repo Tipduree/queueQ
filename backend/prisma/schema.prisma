@@ -50,6 +50,7 @@ model Booking {
   items         BookingItem[]
 
   @@index([bookingDate, timeSlot])
+  @@index([lineUserId, bookingDate])
   @@map("bookings")
 }
 

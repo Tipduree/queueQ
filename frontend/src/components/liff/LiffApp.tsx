@@ -1,5 +1,6 @@
 "use client";
 
+import { LiffBookingHistory } from "@/components/liff/LiffBookingHistory";
 import { SpaHome } from "@/components/spa/SpaHome";
 import {
   ensureLiffLogin,
@@ -7,15 +8,20 @@ import {
   hasWelcomeBeenSent,
   markWelcomeSent,
 } from "@/lib/liff/client";
+import { getLiffView } from "@/lib/liff/routing";
 import { saveLineProfile } from "@/lib/line/session";
+import type { LineProfile } from "@/lib/line/types";
 import { useEffect, useRef, useState } from "react";
 
 type LiffStatus = "loading" | "login_redirect" | "ready" | "error";
+type LiffView = "book" | "history" | "default";
 
 export function LiffApp() {
   const [status, setStatus] = useState<LiffStatus>("loading");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [step, setStep] = useState("Starting…");
+  const [profile, setProfile] = useState<LineProfile | null>(null);
+  const [view, setView] = useState<LiffView>("default");
   const startedRef = useRef(false);
 
   useEffect(() => {
@@ -26,11 +32,15 @@ export function LiffApp() {
       try {
         setStep("Loading LINE SDK…");
         setStep("Checking LINE login…");
-        const profile = await ensureLiffLogin();
-        saveLineProfile(profile);
+        const lineProfile = await ensureLiffLogin();
+        saveLineProfile(lineProfile);
+        setProfile(lineProfile);
+        setView(getLiffView());
 
-        setStep("Signed in — loading booking…");
-        if (!hasWelcomeBeenSent(profile.userId)) {
+        const isHistory = getLiffView() === "history";
+        setStep(isHistory ? "Loading booking history…" : "Signed in — loading booking…");
+
+        if (!isHistory && !hasWelcomeBeenSent(lineProfile.userId)) {
           const accessToken = await getLiffAccessToken();
           if (accessToken) {
             void fetch("/api/line/welcome", {
@@ -38,7 +48,7 @@ export function LiffApp() {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ accessToken }),
             }).then((res) => {
-              if (res.ok) markWelcomeSent(profile.userId);
+              if (res.ok) markWelcomeSent(lineProfile.userId);
             });
           }
         }
@@ -93,6 +103,10 @@ export function LiffApp() {
         </div>
       </main>
     );
+  }
+
+  if (view === "history" && profile) {
+    return <LiffBookingHistory profile={profile} />;
   }
 
   return <SpaHome mode="booking" />;

@@ -23,6 +23,14 @@ export function getLiffBookingUrl(): string {
   return `https://liff.line.me/${liffId}/book`;
 }
 
+export function getLiffHistoryUrl(): string {
+  const liffId = getLiffId();
+  if (!liffId) {
+    throw new Error("LIFF is not configured");
+  }
+  return `https://liff.line.me/${liffId}/history`;
+}
+
 export function getLiffEndpointPath(): string {
   return "/liff";
 }
