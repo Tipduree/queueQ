@@ -1,7 +1,10 @@
 import { createHmac, timingSafeEqual } from "crypto";
 
+import { ADMIN_SESSION_HEADER } from "@/lib/admin/constants";
+
 const SESSION_VALUE = "suanbai-admin-v1";
 export const ADMIN_SESSION_COOKIE = "admin_session";
+export { ADMIN_SESSION_HEADER };
 
 export function createAdminSessionToken(): string {
   const secret = process.env.ADMIN_PASSWORD?.trim();
@@ -23,6 +26,26 @@ export function verifyAdminSessionToken(token: string | undefined): boolean {
   } catch {
     return false;
   }
+}
+
+export function resolveSessionToken(
+  request: Request,
+  cookieToken?: string,
+): string | undefined {
+  const headerToken = request.headers.get(ADMIN_SESSION_HEADER)?.trim();
+  if (headerToken) return headerToken;
+  return cookieToken;
+}
+
+export function cookieOptions() {
+  return {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure:
+      process.env.VERCEL === "1" || process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 12,
+  };
 }
 
 export function getAdminApiKey(): string | null {

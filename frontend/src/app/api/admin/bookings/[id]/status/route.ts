@@ -1,27 +1,19 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import {
-  ADMIN_SESSION_COOKIE,
   adminBackendHeaders,
   API_BASE,
-  verifyAdminSessionToken,
 } from "@/lib/admin/session";
-
-async function requireAdminSession() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(ADMIN_SESSION_COOKIE)?.value;
-  if (!verifyAdminSessionToken(token)) {
-    return false;
-  }
-  return true;
-}
+import { requireAdminSession } from "@/lib/admin/session.server";
 
 export async function PATCH(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
-  if (!(await requireAdminSession())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await requireAdminSession(request))) {
+    return NextResponse.json(
+      { error: "Unauthorized", code: "SESSION" },
+      { status: 401 },
+    );
   }
 
   const { id } = await context.params;
@@ -34,15 +26,27 @@ export async function PATCH(
       body,
     });
 
+    if (res.status === 401) {
+      return NextResponse.json(
+        {
+          error:
+            "Backend rejected ADMIN_API_KEY — set the same value on Vercel and Render, then redeploy both",
+          code: "BACKEND_AUTH",
+        },
+        { status: 503 },
+      );
+    }
+
     const responseBody = await res.text();
     return new NextResponse(responseBody, {
       status: res.status,
       headers: { "Content-Type": "application/json" },
     });
-  } catch {
-    return NextResponse.json(
-      { error: "Admin backend is not configured" },
-      { status: 503 },
-    );
+  } catch (err) {
+    const message =
+      err instanceof Error && err.message.includes("ADMIN_API_KEY")
+        ? "ADMIN_API_KEY is not configured on Vercel"
+        : "Admin backend is not configured";
+    return NextResponse.json({ error: message, code: "CONFIG" }, { status: 503 });
   }
 }

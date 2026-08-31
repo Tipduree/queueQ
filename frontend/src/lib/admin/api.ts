@@ -1,3 +1,5 @@
+import { ADMIN_SESSION_HEADER } from "@/lib/admin/constants";
+
 export type AdminBookingRecord = {
   id: string;
   queueNumber: string;
@@ -21,17 +23,53 @@ export type AdminBookingRecord = {
   }>;
 };
 
-export async function fetchAdminBookings(date: string): Promise<AdminBookingRecord[]> {
-  const res = await fetch(`/api/admin/bookings?date=${encodeURIComponent(date)}`, {
-    cache: "no-store",
-  });
-  if (res.status === 401) {
-    throw new Error("UNAUTHORIZED");
+const SESSION_STORAGE_KEY = "admin_session_token";
+
+export function getStoredAdminSession(): string | null {
+  if (typeof window === "undefined") return null;
+  return sessionStorage.getItem(SESSION_STORAGE_KEY);
+}
+
+function storeAdminSession(token: string) {
+  sessionStorage.setItem(SESSION_STORAGE_KEY, token);
+}
+
+export function clearAdminSession() {
+  sessionStorage.removeItem(SESSION_STORAGE_KEY);
+}
+
+function adminFetchInit(init: RequestInit = {}): RequestInit {
+  const token = getStoredAdminSession();
+  const headers = new Headers(init.headers);
+  if (token) {
+    headers.set(ADMIN_SESSION_HEADER, token);
   }
+  return {
+    ...init,
+    credentials: "include",
+    headers,
+  };
+}
+
+export async function fetchAdminBookings(date: string): Promise<AdminBookingRecord[]> {
+  const res = await fetch(
+    `/api/admin/bookings?date=${encodeURIComponent(date)}`,
+    adminFetchInit({ cache: "no-store" }),
+  );
+
+  if (res.status === 401) {
+    const body = (await res.json().catch(() => ({}))) as { code?: string };
+    if (body.code === "SESSION") {
+      clearAdminSession();
+      throw new Error("UNAUTHORIZED");
+    }
+  }
+
   if (!res.ok) {
     const body = (await res.json().catch(() => ({}))) as { error?: string };
     throw new Error(body.error ?? "Failed to load bookings");
   }
+
   return res.json() as Promise<AdminBookingRecord[]>;
 }
 
@@ -40,11 +78,14 @@ export async function updateAdminBookingStatus(
   status: AdminBookingRecord["status"],
   notify = true,
 ): Promise<void> {
-  const res = await fetch(`/api/admin/bookings/${id}/status`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ status, notify }),
-  });
+  const res = await fetch(
+    `/api/admin/bookings/${id}/status`,
+    adminFetchInit({
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status, notify }),
+    }),
+  );
   if (!res.ok) {
     const body = (await res.json().catch(() => ({}))) as { message?: string; error?: string };
     throw new Error(body.message ?? body.error ?? "Update failed");
@@ -57,11 +98,14 @@ export async function updateAdminBookingSchedule(
   timeSlot: string,
   notify = true,
 ): Promise<void> {
-  const res = await fetch(`/api/admin/bookings/${id}/schedule`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ bookingDate, timeSlot, notify }),
-  });
+  const res = await fetch(
+    `/api/admin/bookings/${id}/schedule`,
+    adminFetchInit({
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bookingDate, timeSlot, notify }),
+    }),
+  );
   if (!res.ok) {
     const body = (await res.json().catch(() => ({}))) as { message?: string; error?: string };
     throw new Error(body.message ?? body.error ?? "Schedule update failed");
@@ -69,11 +113,14 @@ export async function updateAdminBookingSchedule(
 }
 
 export async function adminLogin(password: string): Promise<void> {
-  const res = await fetch("/api/admin/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ password: password.trim() }),
-  });
+  const res = await fetch(
+    "/api/admin/login",
+    adminFetchInit({
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: password.trim() }),
+    }),
+  );
   if (!res.ok) {
     const body = (await res.json().catch(() => ({}))) as { error?: string };
     if (res.status === 503) {
@@ -81,8 +128,14 @@ export async function adminLogin(password: string): Promise<void> {
     }
     throw new Error(body.error ?? "Invalid password");
   }
+
+  const body = (await res.json()) as { sessionToken?: string };
+  if (body.sessionToken) {
+    storeAdminSession(body.sessionToken);
+  }
 }
 
 export async function adminLogout(): Promise<void> {
-  await fetch("/api/admin/login", { method: "DELETE" });
+  clearAdminSession();
+  await fetch("/api/admin/login", adminFetchInit({ method: "DELETE" }));
 }

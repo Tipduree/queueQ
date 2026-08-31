@@ -1,7 +1,9 @@
 import {
   ADMIN_SESSION_COOKIE,
+  cookieOptions,
   createAdminSessionToken,
 } from "@/lib/admin/session";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 type LoginBody = {
@@ -30,25 +32,14 @@ export async function POST(request: Request) {
   }
 
   const token = createAdminSessionToken();
-  const response = NextResponse.json({ ok: true });
-  response.cookies.set(ADMIN_SESSION_COOKIE, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 12,
-  });
-  return response;
+  const cookieStore = await cookies();
+  cookieStore.set(ADMIN_SESSION_COOKIE, token, cookieOptions());
+
+  return NextResponse.json({ ok: true, sessionToken: token });
 }
 
 export async function DELETE() {
-  const response = NextResponse.json({ ok: true });
-  response.cookies.set(ADMIN_SESSION_COOKIE, "", {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 0,
-  });
-  return response;
+  const cookieStore = await cookies();
+  cookieStore.set(ADMIN_SESSION_COOKIE, "", { ...cookieOptions(), maxAge: 0 });
+  return NextResponse.json({ ok: true });
 }
