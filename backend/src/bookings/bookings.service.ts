@@ -192,6 +192,12 @@ export class BookingsService {
   }
 
   async updateStatus(id: string, status: BookingStatus, notify = true) {
+    if (status === 'COMPLETED') {
+      throw new BadRequestException(
+        'Completed status is not available in admin workflow',
+      );
+    }
+
     const existing = await this.prisma.booking.findUnique({
       where: { id },
       include: { items: { include: { service: true } } },

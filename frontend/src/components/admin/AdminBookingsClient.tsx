@@ -185,6 +185,7 @@ export function AdminBookingsClient() {
             const draft = getScheduleDraft(booking);
             const isPending = booking.status === "PENDING";
             const isBusy = busyId === booking.id;
+            const canManage = isPending;
 
             return (
               <article
@@ -231,7 +232,11 @@ export function AdminBookingsClient() {
                   ))}
                 </ul>
 
-                {booking.status !== "CANCELLED" && booking.status !== "COMPLETED" ? (
+                {booking.status === "CONFIRMED" ? (
+                  <p className="admin-muted">ยืนยันแล้ว — ไม่ต้องดำเนินการเพิ่ม</p>
+                ) : null}
+
+                {canManage ? (
                   <div className="admin-schedule">
                     <p className="admin-schedule__label">แก้ไขวัน/เวลา</p>
                     <div className="admin-schedule__fields">
@@ -281,68 +286,46 @@ export function AdminBookingsClient() {
                   </div>
                 ) : null}
 
+                {canManage ? (
                 <div className="admin-actions">
-                  {booking.status === "PENDING" ? (
-                    <button
-                      type="button"
-                      className="admin-btn admin-btn--primary"
-                      disabled={isBusy}
-                      onClick={() =>
-                        void runAction(booking.id, () =>
-                          updateAdminBookingStatusWithSchedule(
-                            booking,
-                            "CONFIRMED",
-                            draft.date,
-                            draft.time,
-                            true,
-                          ),
-                        )
-                      }
-                    >
-                      ยืนยัน
-                    </button>
-                  ) : null}
-                  {booking.status === "CONFIRMED" ? (
-                    <button
-                      type="button"
-                      className="admin-btn admin-btn--primary"
-                      disabled={isBusy}
-                      onClick={() =>
-                        void runAction(booking.id, () =>
-                          updateAdminBookingStatusWithSchedule(
-                            booking,
-                            "COMPLETED",
-                            draft.date,
-                            draft.time,
-                            false,
-                          ),
-                        )
-                      }
-                    >
-                      เสร็จสิ้น
-                    </button>
-                  ) : null}
-                  {booking.status === "PENDING" || booking.status === "CONFIRMED" ? (
-                    <button
-                      type="button"
-                      className="admin-btn admin-btn--danger"
-                      disabled={isBusy}
-                      onClick={() =>
-                        void runAction(booking.id, () =>
-                          updateAdminBookingStatusWithSchedule(
-                            booking,
-                            "CANCELLED",
-                            draft.date,
-                            draft.time,
-                            true,
-                          ),
-                        )
-                      }
-                    >
-                      ยกเลิก
-                    </button>
-                  ) : null}
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn--primary"
+                    disabled={isBusy}
+                    onClick={() =>
+                      void runAction(booking.id, () =>
+                        updateAdminBookingStatusWithSchedule(
+                          booking,
+                          "CONFIRMED",
+                          draft.date,
+                          draft.time,
+                          true,
+                        ),
+                      )
+                    }
+                  >
+                    ยืนยัน
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn--danger"
+                    disabled={isBusy}
+                    onClick={() =>
+                      void runAction(booking.id, () =>
+                        updateAdminBookingStatusWithSchedule(
+                          booking,
+                          "CANCELLED",
+                          draft.date,
+                          draft.time,
+                          true,
+                        ),
+                      )
+                    }
+                  >
+                    ยกเลิก
+                  </button>
                 </div>
+                ) : null}
               </article>
             );
           })}
