@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Controller,
+  Get,
   Headers,
   Logger,
   Post,
@@ -17,6 +18,16 @@ export class LineWebhookController {
   private readonly logger = new Logger(LineWebhookController.name);
 
   constructor(private readonly lineChat: LineChatService) {}
+
+  @Get('webhook')
+  webhookHealth() {
+    const configured = Boolean(process.env.LINE_CHANNEL_SECRET?.trim());
+    return {
+      ok: true,
+      endpoint: 'POST /line/webhook',
+      lineChannelSecretConfigured: configured,
+    };
+  }
 
   @Post('webhook')
   async handleWebhook(

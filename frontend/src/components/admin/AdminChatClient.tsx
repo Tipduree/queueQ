@@ -16,8 +16,11 @@ import {
   type LinkedBookingSummary,
 } from "@/lib/admin/labels";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+
+const CHAT_POLL_MS = 4000;
+const SELECTED_CHAT_STORAGE_KEY = "admin_chat_selected_line_user_id";
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleString("th-TH", {
@@ -93,6 +96,8 @@ function BookingContext({
 }
 
 export function AdminChatClient() {
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const { refreshSession } = useAdmin();
   const [conversations, setConversations] = useState<AdminChatConversation[]>([]);
@@ -100,44 +105,92 @@ export function AdminChatClient() {
   const [thread, setThread] = useState<AdminChatThread | null>(null);
   const [reply, setReply] = useState("");
   const [loading, setLoading] = useState(true);
+  const [threadLoading, setThreadLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const prevMessageCountRef = useRef(0);
+  const selectedIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const lineUserId = searchParams.get("lineUserId")?.trim();
-    if (lineUserId) {
-      setSelectedId(lineUserId);
-    }
-  }, [searchParams]);
+    selectedIdRef.current = selectedId;
+  }, [selectedId]);
 
-  const loadConversations = useCallback(async () => {
+  const selectConversation = useCallback(
+    (lineUserId: string) => {
+      setSelectedId(lineUserId);
+      sessionStorage.setItem(SELECTED_CHAT_STORAGE_KEY, lineUserId);
+
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("lineUserId", lineUserId);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [pathname, router, searchParams],
+  );
+
+  useEffect(() => {
+    const fromUrl = searchParams.get("lineUserId")?.trim();
+    if (fromUrl) {
+      setSelectedId(fromUrl);
+      sessionStorage.setItem(SELECTED_CHAT_STORAGE_KEY, fromUrl);
+      return;
+    }
+
+    const stored = sessionStorage.getItem(SELECTED_CHAT_STORAGE_KEY)?.trim();
+    if (stored) {
+      setSelectedId(stored);
+      router.replace(`${pathname}?lineUserId=${encodeURIComponent(stored)}`, { scroll: false });
+    }
+  }, [pathname, router, searchParams]);
+
+  const loadConversations = useCallback(async (options?: { silent?: boolean }) => {
     try {
       const rows = await fetchAdminConversations();
       setConversations(rows);
-      setError(null);
+      if (!options?.silent) {
+        setError(null);
+      }
     } catch (err) {
       if (err instanceof Error && err.message === "UNAUTHORIZED") {
         await refreshSession();
         return;
       }
-      setError(err instanceof Error ? err.message : "Load failed");
+      if (!options?.silent) {
+        setError(err instanceof Error ? err.message : "Load failed");
+      }
     }
   }, [refreshSession]);
 
-  const loadThread = useCallback(async (lineUserId: string) => {
-    try {
-      const data = await fetchAdminChatMessages(lineUserId);
-      setThread(data);
-      setError(null);
-    } catch (err) {
-      if (err instanceof Error && err.message === "UNAUTHORIZED") {
-        await refreshSession();
-        return;
+  const loadThread = useCallback(
+    async (lineUserId: string, options?: { silent?: boolean }) => {
+      if (!options?.silent) {
+        setThreadLoading(true);
       }
-      setError(err instanceof Error ? err.message : "Load failed");
-    }
-  }, [refreshSession]);
+      try {
+        const data = await fetchAdminChatMessages(lineUserId);
+        if (selectedIdRef.current !== lineUserId) {
+          return;
+        }
+        setThread(data);
+        if (!options?.silent) {
+          setError(null);
+        }
+      } catch (err) {
+        if (err instanceof Error && err.message === "UNAUTHORIZED") {
+          await refreshSession();
+          return;
+        }
+        if (!options?.silent) {
+          setError(err instanceof Error ? err.message : "Load failed");
+        }
+      } finally {
+        if (!options?.silent && selectedIdRef.current === lineUserId) {
+          setThreadLoading(false);
+        }
+      }
+    },
+    [refreshSession],
+  );
 
   useEffect(() => {
     let active = true;
@@ -146,29 +199,42 @@ export function AdminChatClient() {
       await loadConversations();
       if (active) setLoading(false);
     })();
+
+    const timer = window.setInterval(() => {
+      void loadConversations({ silent: true });
+    }, CHAT_POLL_MS);
+
     return () => {
       active = false;
+      window.clearInterval(timer);
     };
   }, [loadConversations]);
 
   useEffect(() => {
     if (!selectedId) {
       setThread(null);
+      setThreadLoading(false);
+      prevMessageCountRef.current = 0;
       return;
     }
 
+    prevMessageCountRef.current = 0;
     void loadThread(selectedId);
+
     const timer = window.setInterval(() => {
-      void loadThread(selectedId);
-      void loadConversations();
-    }, 5000);
+      void loadThread(selectedId, { silent: true });
+    }, CHAT_POLL_MS);
 
     return () => window.clearInterval(timer);
-  }, [selectedId, loadThread, loadConversations]);
+  }, [selectedId, loadThread]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [thread?.messages.length]);
+    const count = thread?.messages.length ?? 0;
+    if (count > prevMessageCountRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+    prevMessageCountRef.current = count;
+  }, [thread?.messages]);
 
   async function handleSend(event: React.FormEvent) {
     event.preventDefault();
@@ -211,7 +277,7 @@ export function AdminChatClient() {
                     <button
                       type="button"
                       className={`admin-chat__conversation${isActive ? " admin-chat__conversation--active" : ""}`}
-                      onClick={() => setSelectedId(conversation.lineUserId)}
+                      onClick={() => selectConversation(conversation.lineUserId)}
                     >
                       <span className="admin-chat__conversation-top">
                         <span className="admin-chat__conversation-name">
@@ -242,9 +308,17 @@ export function AdminChatClient() {
         </aside>
 
         <section className="admin-chat__panel admin-card">
-          {!selectedId || !thread ? (
+          {!selectedId ? (
             <div className="admin-chat__empty">
               <p className="admin-muted">เลือกแชทจากรายการด้านซ้าย</p>
+            </div>
+          ) : threadLoading && !thread ? (
+            <div className="admin-chat__empty">
+              <p className="admin-muted">กำลังโหลดแชท…</p>
+            </div>
+          ) : !thread ? (
+            <div className="admin-chat__empty">
+              <p className="admin-muted">ไม่พบแชทนี้</p>
             </div>
           ) : (
             <>

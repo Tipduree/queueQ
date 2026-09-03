@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
-import { adminBackendHeaders, API_BASE } from "@/lib/admin/session";
+import { API_BASE } from "@/lib/admin/session";
+import { proxyAdminBackend } from "@/lib/admin/backend-proxy";
 import { requireAdminSession } from "@/lib/admin/session.server";
+import { NextResponse } from "next/server";
 
 export async function GET(
   request: Request,
@@ -12,20 +13,7 @@ export async function GET(
 
   const { lineUserId } = await context.params;
 
-  try {
-    const res = await fetch(
-      `${API_BASE}/admin/chat/conversations/${encodeURIComponent(lineUserId)}/messages`,
-      {
-        headers: adminBackendHeaders(),
-        cache: "no-store",
-      },
-    );
-    const body = await res.text();
-    return new NextResponse(body, {
-      status: res.status,
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch {
-    return NextResponse.json({ error: "Admin backend is not configured" }, { status: 503 });
-  }
+  return proxyAdminBackend(
+    `${API_BASE}/admin/chat/conversations/${encodeURIComponent(lineUserId)}/messages`,
+  );
 }
