@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { BookingsModule } from './bookings/bookings.module';
+import { LineModule } from './line/line.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ServicesModule } from './services/services.module';
 
@@ -11,6 +12,7 @@ import { ServicesModule } from './services/services.module';
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
     ServicesModule,
+    LineModule,
     BookingsModule,
   ],
   controllers: [AppController],

@@ -161,3 +161,10 @@ export async function adminLogout(): Promise<void> {
   clearAdminSession();
   await fetch("/api/admin/login", adminFetchInit({ method: "DELETE" }));
 }
+
+export async function checkAdminSession(): Promise<void> {
+  const res = await fetch("/api/admin/session", adminFetchInit({ cache: "no-store" }));
+  if (!res.ok) {
+    throw new Error("UNAUTHORIZED");
+  }
+}
