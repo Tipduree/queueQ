@@ -9,6 +9,14 @@ import {
   type AdminChatConversation,
   type AdminChatThread,
 } from "@/lib/admin/chat-api";
+import {
+  ADMIN_BOOKING_STATUS_LABELS,
+  bookingManageDate,
+  formatBookingWhen,
+  type LinkedBookingSummary,
+} from "@/lib/admin/labels";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 function formatTime(iso: string): string {
@@ -24,7 +32,68 @@ function displayName(conversation: Pick<AdminChatConversation, "displayName" | "
   return conversation.displayName?.trim() || conversation.lineUserId.slice(0, 8);
 }
 
+function BookingContext({
+  bookings,
+  primaryBooking,
+}: {
+  bookings: LinkedBookingSummary[];
+  primaryBooking: LinkedBookingSummary | null;
+}) {
+  if (bookings.length === 0) {
+    return (
+      <div className="admin-chat__booking admin-chat__booking--empty">
+        <p className="admin-chat__booking-title">คิวที่เกี่ยวข้อง</p>
+        <p className="admin-muted">ยังไม่มีการจองจาก LINE user นี้</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="admin-chat__booking">
+      <p className="admin-chat__booking-title">คิวที่เกี่ยวข้อง</p>
+      {primaryBooking ? (
+        <div className="admin-chat__booking-primary">
+          <div className="admin-chat__booking-row">
+            <strong>{primaryBooking.queueNumber}</strong>
+            <span className={`admin-badge admin-badge--${primaryBooking.status.toLowerCase()}`}>
+              {ADMIN_BOOKING_STATUS_LABELS[primaryBooking.status]}
+            </span>
+          </div>
+          <p>
+            {primaryBooking.guestName} · {primaryBooking.guestPhone}
+          </p>
+          <p>{formatBookingWhen(primaryBooking)}</p>
+          <p className="admin-muted">
+            {primaryBooking.guestCount} ท่าน · {primaryBooking.totalPrice.toLocaleString()} ฿
+          </p>
+          <Link
+            href={`/admin/bookings?date=${encodeURIComponent(bookingManageDate(primaryBooking))}`}
+            className="admin-btn admin-chat__booking-link"
+          >
+            ไปจัดการคิว
+          </Link>
+        </div>
+      ) : null}
+      {bookings.filter((booking) => booking.id !== primaryBooking?.id).length > 0 ? (
+        <ul className="admin-chat__booking-list">
+          {bookings
+            .filter((booking) => booking.id !== primaryBooking?.id)
+            .map((booking) => (
+            <li key={booking.id}>
+              <span>{booking.queueNumber}</span>
+              <span className="admin-muted">
+                {ADMIN_BOOKING_STATUS_LABELS[booking.status]} · {formatBookingWhen(booking)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
 export function AdminChatClient() {
+  const searchParams = useSearchParams();
   const { refreshSession } = useAdmin();
   const [conversations, setConversations] = useState<AdminChatConversation[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -34,6 +103,13 @@ export function AdminChatClient() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const lineUserId = searchParams.get("lineUserId")?.trim();
+    if (lineUserId) {
+      setSelectedId(lineUserId);
+    }
+  }, [searchParams]);
 
   const loadConversations = useCallback(async () => {
     try {
@@ -129,6 +205,7 @@ export function AdminChatClient() {
               {conversations.map((conversation) => {
                 const preview = conversation.messages[0]?.text ?? "";
                 const isActive = selectedId === conversation.lineUserId;
+                const pending = conversation.primaryBooking?.status === "PENDING";
                 return (
                   <li key={conversation.id}>
                     <button
@@ -136,10 +213,23 @@ export function AdminChatClient() {
                       className={`admin-chat__conversation${isActive ? " admin-chat__conversation--active" : ""}`}
                       onClick={() => setSelectedId(conversation.lineUserId)}
                     >
-                      <span className="admin-chat__conversation-name">
-                        {displayName(conversation)}
+                      <span className="admin-chat__conversation-top">
+                        <span className="admin-chat__conversation-name">
+                          {displayName(conversation)}
+                        </span>
+                        {pending && conversation.primaryBooking ? (
+                          <span className="admin-badge admin-badge--pending">
+                            {conversation.primaryBooking.queueNumber}
+                          </span>
+                        ) : null}
                       </span>
                       <span className="admin-chat__conversation-preview">{preview}</span>
+                      {conversation.primaryBooking ? (
+                        <span className="admin-chat__conversation-booking">
+                          {ADMIN_BOOKING_STATUS_LABELS[conversation.primaryBooking.status]} ·{" "}
+                          {formatBookingWhen(conversation.primaryBooking)}
+                        </span>
+                      ) : null}
                       <span className="admin-chat__conversation-time">
                         {formatTime(conversation.lastMessageAt)}
                       </span>
@@ -166,6 +256,11 @@ export function AdminChatClient() {
                   <p className="admin-muted admin-chat__header-id">{thread.lineUserId}</p>
                 </div>
               </header>
+
+              <BookingContext
+                bookings={thread.bookings}
+                primaryBooking={thread.primaryBooking}
+              />
 
               <div className="admin-chat__messages">
                 {thread.messages.map((message) => (

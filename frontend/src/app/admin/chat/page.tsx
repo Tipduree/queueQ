@@ -1,4 +1,5 @@
 import { AdminChatClient } from "@/components/admin/AdminChatClient";
+import { Suspense } from "react";
 
 export const metadata = {
   title: "Admin — LINE Chat",
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function AdminChatPage() {
-  return <AdminChatClient />;
+  return (
+    <Suspense fallback={<main className="admin-page"><p className="admin-muted admin-shell">กำลังโหลด…</p></main>}>
+      <AdminChatClient />
+    </Suspense>
+  );
 }

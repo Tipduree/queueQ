@@ -7,6 +7,11 @@ import {
 } from '@nestjs/common';
 import { LineMessageDirection } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  pickPrimaryBooking,
+  toLinkedBookingSummary,
+  type LinkedBookingSummary,
+} from './line-chat-bookings.util';
 import { LinePushService } from './line-push.service';
 
 type LineWebhookBody = {
@@ -52,8 +57,8 @@ export class LineChatService {
     }
   }
 
-  listConversations() {
-    return this.prisma.lineConversation.findMany({
+  async listConversations() {
+    const conversations = await this.prisma.lineConversation.findMany({
       orderBy: { lastMessageAt: 'desc' },
       include: {
         messages: {
@@ -61,6 +66,18 @@ export class LineChatService {
           take: 1,
         },
       },
+    });
+
+    const lineUserIds = conversations.map((conversation) => conversation.lineUserId);
+    const bookingsByUser = await this.loadBookingsByLineUserIds(lineUserIds);
+
+    return conversations.map((conversation) => {
+      const bookings = bookingsByUser.get(conversation.lineUserId) ?? [];
+      return {
+        ...conversation,
+        bookings,
+        primaryBooking: pickPrimaryBooking(bookings),
+      };
     });
   }
 
@@ -79,7 +96,13 @@ export class LineChatService {
       throw new NotFoundException('Conversation not found');
     }
 
-    return conversation;
+    const bookings = await this.loadBookingsForLineUser(lineUserId);
+
+    return {
+      ...conversation,
+      bookings,
+      primaryBooking: pickPrimaryBooking(bookings),
+    };
   }
 
   async reply(lineUserId: string, text: string) {
@@ -155,6 +178,46 @@ export class LineChatService {
         lineMessageId: params.lineMessageId ?? null,
       },
     });
+  }
+
+  private async loadBookingsForLineUser(
+    lineUserId: string,
+  ): Promise<LinkedBookingSummary[]> {
+    const bookings = await this.prisma.booking.findMany({
+      where: {
+        lineUserId,
+        status: { not: 'CANCELLED' },
+      },
+      orderBy: [{ bookingDate: 'desc' }, { timeSlot: 'desc' }],
+      take: 10,
+    });
+
+    return bookings.map(toLinkedBookingSummary);
+  }
+
+  private async loadBookingsByLineUserIds(lineUserIds: string[]) {
+    if (lineUserIds.length === 0) {
+      return new Map<string, LinkedBookingSummary[]>();
+    }
+
+    const bookings = await this.prisma.booking.findMany({
+      where: {
+        lineUserId: { in: lineUserIds },
+        status: { not: 'CANCELLED' },
+      },
+      orderBy: [{ bookingDate: 'desc' }, { timeSlot: 'desc' }],
+    });
+
+    const grouped = new Map<string, LinkedBookingSummary[]>();
+    for (const booking of bookings) {
+      if (!booking.lineUserId) continue;
+      const summary = toLinkedBookingSummary(booking);
+      const existing = grouped.get(booking.lineUserId) ?? [];
+      existing.push(summary);
+      grouped.set(booking.lineUserId, existing);
+    }
+
+    return grouped;
   }
 
   private async fetchDisplayName(lineUserId: string): Promise<string | null> {

@@ -1,10 +1,13 @@
 import { ADMIN_SESSION_HEADER } from "@/lib/admin/constants";
+import type { LinkedBookingSummary } from "@/lib/admin/labels";
 
 export type AdminChatConversation = {
   id: string;
   lineUserId: string;
   displayName: string | null;
   lastMessageAt: string;
+  bookings: LinkedBookingSummary[];
+  primaryBooking: LinkedBookingSummary | null;
   messages: Array<{
     id: string;
     text: string;
@@ -18,6 +21,8 @@ export type AdminChatThread = {
   lineUserId: string;
   displayName: string | null;
   lastMessageAt: string;
+  bookings: LinkedBookingSummary[];
+  primaryBooking: LinkedBookingSummary | null;
   messages: Array<{
     id: string;
     text: string;

@@ -170,6 +170,76 @@
   border-top: 1px solid #eceae1;
 }
 
+.admin-chat__conversation-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.admin-chat__conversation-booking {
+  display: block;
+  color: #4a5d23;
+  font-size: 0.78rem;
+  margin-top: 4px;
+}
+
+.admin-chat__booking {
+  padding: 14px 16px;
+  border-bottom: 1px solid #eceae1;
+  background: #fffdf7;
+}
+
+.admin-chat__booking--empty {
+  background: #faf9f6;
+}
+
+.admin-chat__booking-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.admin-chat__booking-primary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-chat__booking-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-chat__booking-link {
+  align-self: flex-start;
+  margin-top: 4px;
+  text-decoration: none;
+}
+
+.admin-chat__booking-list {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+}
+
+.admin-chat__booking-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.admin-booking__chat-link {
+  margin-top: 10px;
+  display: inline-flex;
+  text-decoration: none;
+}
+
 .admin-chat__composer textarea {
   border: 1px solid #dddace;
   border-radius: 12px;

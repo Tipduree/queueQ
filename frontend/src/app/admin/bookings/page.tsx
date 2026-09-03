@@ -1,4 +1,5 @@
 import { AdminBookingsClient } from "@/components/admin/AdminBookingsClient";
+import { Suspense } from "react";
 
 export const metadata = {
   title: "Admin — Bookings",
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function AdminBookingsPage() {
-  return <AdminBookingsClient />;
+  return (
+    <Suspense fallback={<main className="admin-page"><p className="admin-muted admin-shell">กำลังโหลด…</p></main>}>
+      <AdminBookingsClient />
+    </Suspense>
+  );
 }

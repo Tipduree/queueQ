@@ -7,7 +7,10 @@ import {
   updateAdminBookingStatusWithSchedule,
   type AdminBookingRecord,
 } from "@/lib/admin/api";
+import { ADMIN_BOOKING_STATUS_LABELS } from "@/lib/admin/labels";
 import { TIME_SLOTS, toDateString } from "@/lib/queue/types";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 const SERVICE_LABELS: Record<string, string> = {
@@ -19,12 +22,7 @@ const SERVICE_LABELS: Record<string, string> = {
   pc5n: "นวดคุณแม่ตั้งครรภ์",
 };
 
-const STATUS_LABELS: Record<AdminBookingRecord["status"], string> = {
-  PENDING: "รอยืนยัน",
-  CONFIRMED: "ยืนยันแล้ว",
-  COMPLETED: "เสร็จสิ้น",
-  CANCELLED: "ยกเลิก",
-};
+const STATUS_LABELS = ADMIN_BOOKING_STATUS_LABELS;
 
 function serviceLabel(nameKey: string): string {
   return SERVICE_LABELS[nameKey] ?? nameKey;
@@ -40,13 +38,22 @@ function formatDateLabel(isoDate: string): string {
 }
 
 export function AdminBookingsClient() {
+  const searchParams = useSearchParams();
   const { refreshSession } = useAdmin();
-  const [date, setDate] = useState(toDateString(new Date()));
+  const initialDate = searchParams.get("date")?.trim() || toDateString(new Date());
+  const [date, setDate] = useState(initialDate);
   const [bookings, setBookings] = useState<AdminBookingRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [scheduleDraft, setScheduleDraft] = useState<Record<string, { date: string; time: string }>>({});
+
+  useEffect(() => {
+    const nextDate = searchParams.get("date")?.trim();
+    if (nextDate) {
+      setDate(nextDate);
+    }
+  }, [searchParams]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -146,8 +153,16 @@ export function AdminBookingsClient() {
                   <p>
                     จำนวน {booking.guestCount} ท่าน · {booking.totalPrice.toLocaleString()} ฿
                   </p>
-                  {booking.notes ? <p className="admin-muted">หมายเหตุ: {booking.notes}</p> : null}
-                </div>
+                    {booking.notes ? <p className="admin-muted">หมายเหตุ: {booking.notes}</p> : null}
+                    {booking.lineUserId ? (
+                      <Link
+                        href={`/admin/chat?lineUserId=${encodeURIComponent(booking.lineUserId)}`}
+                        className="admin-btn admin-btn--ghost admin-booking__chat-link"
+                      >
+                        แชท LINE
+                      </Link>
+                    ) : null}
+                  </div>
               ) : (
                 <p>
                   {booking.guestName} · {booking.guestPhone} · {booking.guestCount} ท่าน
