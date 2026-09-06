@@ -2,6 +2,7 @@
 
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { useAdmin } from "@/components/admin/AdminProvider";
+import { useAdminUnread } from "@/components/admin/AdminUnreadContext";
 import {
   fetchAdminChatMessages,
   fetchAdminConversations,
@@ -19,7 +20,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const CHAT_POLL_MS = 4000;
+const CHAT_POLL_MS = 8000;
 const SELECTED_CHAT_STORAGE_KEY = "admin_chat_selected_line_user_id";
 
 function formatTime(iso: string): string {
@@ -100,6 +101,7 @@ export function AdminChatClient() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { refreshSession } = useAdmin();
+  const { setChatUnreadCount } = useAdminUnread();
   const [conversations, setConversations] = useState<AdminChatConversation[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [thread, setThread] = useState<AdminChatThread | null>(null);
@@ -111,6 +113,8 @@ export function AdminChatClient() {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const prevMessageCountRef = useRef(0);
   const selectedIdRef = useRef<string | null>(null);
+  const restoredSelectionRef = useRef(false);
+  const lineUserIdParam = searchParams.get("lineUserId")?.trim() ?? "";
 
   useEffect(() => {
     selectedIdRef.current = selectedId;
@@ -118,48 +122,62 @@ export function AdminChatClient() {
 
   const selectConversation = useCallback(
     (lineUserId: string) => {
+      if (selectedIdRef.current === lineUserId) {
+        return;
+      }
       setSelectedId(lineUserId);
       sessionStorage.setItem(SELECTED_CHAT_STORAGE_KEY, lineUserId);
-
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("lineUserId", lineUserId);
-      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      router.replace(`${pathname}?lineUserId=${encodeURIComponent(lineUserId)}`, { scroll: false });
     },
-    [pathname, router, searchParams],
+    [pathname, router],
   );
 
   useEffect(() => {
-    const fromUrl = searchParams.get("lineUserId")?.trim();
-    if (fromUrl) {
-      setSelectedId(fromUrl);
-      sessionStorage.setItem(SELECTED_CHAT_STORAGE_KEY, fromUrl);
+    if (lineUserIdParam) {
+      restoredSelectionRef.current = true;
+      setSelectedId((current) => (current === lineUserIdParam ? current : lineUserIdParam));
+      sessionStorage.setItem(SELECTED_CHAT_STORAGE_KEY, lineUserIdParam);
+      return;
+    }
+
+    if (restoredSelectionRef.current) {
       return;
     }
 
     const stored = sessionStorage.getItem(SELECTED_CHAT_STORAGE_KEY)?.trim();
-    if (stored) {
-      setSelectedId(stored);
-      router.replace(`${pathname}?lineUserId=${encodeURIComponent(stored)}`, { scroll: false });
+    if (!stored) {
+      return;
     }
-  }, [pathname, router, searchParams]);
+
+    restoredSelectionRef.current = true;
+    setSelectedId(stored);
+    router.replace(`${pathname}?lineUserId=${encodeURIComponent(stored)}`, { scroll: false });
+  }, [lineUserIdParam, pathname, router]);
 
   const loadConversations = useCallback(async (options?: { silent?: boolean }) => {
     try {
       const rows = await fetchAdminConversations();
       setConversations(rows);
+      const totalUnread = rows.reduce((sum, row) => {
+        const isActive = selectedIdRef.current === row.lineUserId;
+        return sum + (isActive ? 0 : (row.unreadCount ?? 0));
+      }, 0);
+      setChatUnreadCount(totalUnread);
       if (!options?.silent) {
         setError(null);
       }
+      return rows;
     } catch (err) {
       if (err instanceof Error && err.message === "UNAUTHORIZED") {
         await refreshSession();
-        return;
+        return null;
       }
       if (!options?.silent) {
         setError(err instanceof Error ? err.message : "Load failed");
       }
+      return null;
     }
-  }, [refreshSession]);
+  }, [refreshSession, setChatUnreadCount]);
 
   const loadThread = useCallback(
     async (lineUserId: string, options?: { silent?: boolean }) => {
@@ -192,23 +210,77 @@ export function AdminChatClient() {
     [refreshSession],
   );
 
-  useEffect(() => {
-    let active = true;
-    void (async () => {
-      setLoading(true);
-      await loadConversations();
-      if (active) setLoading(false);
-    })();
+  const loadConversationsRef = useRef(loadConversations);
+  const loadThreadRef = useRef(loadThread);
 
-    const timer = window.setInterval(() => {
-      void loadConversations({ silent: true });
-    }, CHAT_POLL_MS);
+  useEffect(() => {
+    loadConversationsRef.current = loadConversations;
+  }, [loadConversations]);
+
+  useEffect(() => {
+    loadThreadRef.current = loadThread;
+  }, [loadThread]);
+
+  useEffect(() => {
+    let cancelled = false;
+    let timer: number | null = null;
+
+    async function poll() {
+      if (document.hidden || cancelled) {
+        return;
+      }
+
+      await loadConversationsRef.current({ silent: true });
+      const activeId = selectedIdRef.current;
+      if (activeId) {
+        await loadThreadRef.current(activeId, { silent: true });
+      }
+    }
+
+    function startPolling() {
+      if (timer !== null || cancelled) {
+        return;
+      }
+      void poll();
+      timer = window.setInterval(() => {
+        void poll();
+      }, CHAT_POLL_MS);
+    }
+
+    function stopPolling() {
+      if (timer !== null) {
+        window.clearInterval(timer);
+        timer = null;
+      }
+    }
+
+    function handleVisibilityChange() {
+      if (document.hidden) {
+        stopPolling();
+        return;
+      }
+      startPolling();
+    }
+
+    setLoading(true);
+    void loadConversationsRef.current().finally(() => {
+      if (!cancelled) {
+        setLoading(false);
+      }
+    });
+
+    if (!document.hidden) {
+      startPolling();
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      active = false;
-      window.clearInterval(timer);
+      cancelled = true;
+      stopPolling();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [loadConversations]);
+  }, [setChatUnreadCount]);
 
   useEffect(() => {
     if (!selectedId) {
@@ -220,12 +292,6 @@ export function AdminChatClient() {
 
     prevMessageCountRef.current = 0;
     void loadThread(selectedId);
-
-    const timer = window.setInterval(() => {
-      void loadThread(selectedId, { silent: true });
-    }, CHAT_POLL_MS);
-
-    return () => window.clearInterval(timer);
   }, [selectedId, loadThread]);
 
   useEffect(() => {

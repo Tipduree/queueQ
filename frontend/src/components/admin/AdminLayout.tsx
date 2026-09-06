@@ -1,12 +1,13 @@
 "use client";
 
 import { useAdmin } from "@/components/admin/AdminProvider";
+import { useAdminUnread } from "@/components/admin/AdminUnreadContext";
 import { fetchAdminChatUnreadCount } from "@/lib/admin/chat-api";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
-const UNREAD_POLL_MS = 4000;
+const UNREAD_POLL_MS = 10000;
 
 type AdminLayoutProps = {
   children: ReactNode;
@@ -24,33 +25,42 @@ function UnreadTabBadge({ count }: { count: number }) {
 
 export function AdminLayout({ children, title }: AdminLayoutProps) {
   const { authed, login, logout } = useAdmin();
+  const { chatUnreadCount, setChatUnreadCount } = useAdminUnread();
   const pathname = usePathname();
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState<string | null>(null);
-  const [chatUnreadCount, setChatUnreadCount] = useState(0);
-
-  const loadUnreadCount = useCallback(async () => {
-    try {
-      const count = await fetchAdminChatUnreadCount();
-      setChatUnreadCount(count);
-    } catch {
-      // ignore background poll errors
-    }
-  }, []);
+  const onChatPage = pathname.startsWith("/admin/chat");
 
   useEffect(() => {
-    if (!authed) {
-      setChatUnreadCount(0);
+    if (!authed || onChatPage) {
+      if (!authed) {
+        setChatUnreadCount(0);
+      }
       return;
     }
 
-    void loadUnreadCount();
-    const timer = window.setInterval(() => {
-      void loadUnreadCount();
-    }, UNREAD_POLL_MS);
+    let cancelled = false;
 
-    return () => window.clearInterval(timer);
-  }, [authed, loadUnreadCount, pathname]);
+    async function pollUnread() {
+      if (document.hidden || cancelled) return;
+      try {
+        const count = await fetchAdminChatUnreadCount();
+        if (!cancelled) {
+          setChatUnreadCount(count);
+        }
+      } catch {
+        // ignore background poll errors
+      }
+    }
+
+    void pollUnread();
+    const timer = window.setInterval(pollUnread, UNREAD_POLL_MS);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [authed, onChatPage, setChatUnreadCount]);
 
   async function handleLogin(event: React.FormEvent) {
     event.preventDefault();
@@ -139,3 +149,4 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
     </main>
   );
 }
+
