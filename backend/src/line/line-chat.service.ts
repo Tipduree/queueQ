@@ -5,7 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { LineMessageDirection } from '@prisma/client';
+import { LineMessageDirection, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   pickPrimaryBooking,
@@ -70,15 +70,24 @@ export class LineChatService {
 
     const lineUserIds = conversations.map((conversation) => conversation.lineUserId);
     const bookingsByUser = await this.loadBookingsByLineUserIds(lineUserIds);
+    const unreadByConversationId = await this.loadUnreadCountsByConversationId(
+      conversations.map((conversation) => conversation.id),
+    );
 
     return conversations.map((conversation) => {
       const bookings = bookingsByUser.get(conversation.lineUserId) ?? [];
       return {
         ...conversation,
+        unreadCount: unreadByConversationId.get(conversation.id) ?? 0,
         bookings,
         primaryBooking: pickPrimaryBooking(bookings),
       };
     });
+  }
+
+  async getUnreadSummary() {
+    const totalUnread = await this.countTotalUnread();
+    return { totalUnread };
   }
 
   async listMessages(lineUserId: string) {
@@ -98,8 +107,14 @@ export class LineChatService {
 
     const bookings = await this.loadBookingsForLineUser(lineUserId);
 
+    await this.prisma.lineConversation.update({
+      where: { id: conversation.id },
+      data: { adminReadAt: new Date() },
+    });
+
     return {
       ...conversation,
+      unreadCount: 0,
       bookings,
       primaryBooking: pickPrimaryBooking(bookings),
     };
@@ -218,6 +233,36 @@ export class LineChatService {
     }
 
     return grouped;
+  }
+
+  private async loadUnreadCountsByConversationId(conversationIds: string[]) {
+    if (conversationIds.length === 0) {
+      return new Map<string, number>();
+    }
+
+    const rows = await this.prisma.$queryRaw<Array<{ conversation_id: string; count: number }>>`
+      SELECT m.conversation_id, COUNT(*)::int AS count
+      FROM line_messages m
+      INNER JOIN line_conversations c ON c.id = m.conversation_id
+      WHERE m.direction = 'INBOUND'
+        AND m.conversation_id IN (${Prisma.join(conversationIds)})
+        AND (c.admin_read_at IS NULL OR m.created_at > c.admin_read_at)
+      GROUP BY m.conversation_id
+    `;
+
+    return new Map(rows.map((row) => [row.conversation_id, row.count]));
+  }
+
+  private async countTotalUnread() {
+    const rows = await this.prisma.$queryRaw<Array<{ count: number }>>`
+      SELECT COUNT(*)::int AS count
+      FROM line_messages m
+      INNER JOIN line_conversations c ON c.id = m.conversation_id
+      WHERE m.direction = 'INBOUND'
+        AND (c.admin_read_at IS NULL OR m.created_at > c.admin_read_at)
+    `;
+
+    return rows[0]?.count ?? 0;
   }
 
   private async fetchDisplayName(lineUserId: string): Promise<string | null> {

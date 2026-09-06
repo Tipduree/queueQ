@@ -51,6 +51,8 @@ EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
+ALTER TABLE "line_conversations" ADD COLUMN IF NOT EXISTS "admin_read_at" TIMESTAMP(3);
+
 -- Verify (should include line_conversations + line_messages):
 -- SELECT table_name FROM information_schema.tables
 -- WHERE table_schema = 'public' AND table_name LIKE 'line_%'

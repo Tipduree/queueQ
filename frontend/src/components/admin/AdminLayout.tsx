@@ -1,20 +1,56 @@
 "use client";
 
 import { useAdmin } from "@/components/admin/AdminProvider";
+import { fetchAdminChatUnreadCount } from "@/lib/admin/chat-api";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+
+const UNREAD_POLL_MS = 4000;
 
 type AdminLayoutProps = {
   children: ReactNode;
   title: string;
 };
 
+function UnreadTabBadge({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span className="admin-unread-badge admin-unread-badge--tab" aria-hidden="true">
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
+
 export function AdminLayout({ children, title }: AdminLayoutProps) {
   const { authed, login, logout } = useAdmin();
   const pathname = usePathname();
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [chatUnreadCount, setChatUnreadCount] = useState(0);
+
+  const loadUnreadCount = useCallback(async () => {
+    try {
+      const count = await fetchAdminChatUnreadCount();
+      setChatUnreadCount(count);
+    } catch {
+      // ignore background poll errors
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!authed) {
+      setChatUnreadCount(0);
+      return;
+    }
+
+    void loadUnreadCount();
+    const timer = window.setInterval(() => {
+      void loadUnreadCount();
+    }, UNREAD_POLL_MS);
+
+    return () => window.clearInterval(timer);
+  }, [authed, loadUnreadCount, pathname]);
 
   async function handleLogin(event: React.FormEvent) {
     event.preventDefault();
@@ -94,6 +130,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
             className={`admin-tab${pathname.startsWith("/admin/chat") ? " admin-tab--active" : ""}`}
           >
             แชท LINE
+            <UnreadTabBadge count={chatUnreadCount} />
           </Link>
         </nav>
 

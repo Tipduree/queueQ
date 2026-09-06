@@ -24,6 +24,7 @@
 .admin-tab {
   display: inline-flex;
   align-items: center;
+  gap: 8px;
   padding: 10px 16px;
   border-radius: 999px;
   border: 1px solid #c8c5b8;
@@ -37,6 +38,39 @@
   background: #4a5d23;
   border-color: #4a5d23;
   color: #fff;
+}
+
+.admin-unread-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #e53935;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.admin-unread-badge--tab {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 0.68rem;
+}
+
+.admin-tab--active .admin-unread-badge {
+  box-shadow: 0 0 0 2px #4a5d23;
+}
+
+.admin-chat__conversation-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .admin-chat {

@@ -272,6 +272,7 @@ export function AdminChatClient() {
                 const preview = conversation.messages[0]?.text ?? "";
                 const isActive = selectedId === conversation.lineUserId;
                 const pending = conversation.primaryBooking?.status === "PENDING";
+                const unreadCount = isActive ? 0 : (conversation.unreadCount ?? 0);
                 return (
                   <li key={conversation.id}>
                     <button
@@ -283,11 +284,18 @@ export function AdminChatClient() {
                         <span className="admin-chat__conversation-name">
                           {displayName(conversation)}
                         </span>
-                        {pending && conversation.primaryBooking ? (
-                          <span className="admin-badge admin-badge--pending">
-                            {conversation.primaryBooking.queueNumber}
-                          </span>
-                        ) : null}
+                        <span className="admin-chat__conversation-badges">
+                          {unreadCount > 0 ? (
+                            <span className="admin-unread-badge" aria-label={`${unreadCount} ข้อความใหม่`}>
+                              {unreadCount > 99 ? "99+" : unreadCount}
+                            </span>
+                          ) : null}
+                          {pending && conversation.primaryBooking ? (
+                            <span className="admin-badge admin-badge--pending">
+                              {conversation.primaryBooking.queueNumber}
+                            </span>
+                          ) : null}
+                        </span>
                       </span>
                       <span className="admin-chat__conversation-preview">{preview}</span>
                       {conversation.primaryBooking ? (

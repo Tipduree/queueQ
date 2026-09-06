@@ -6,6 +6,7 @@ export type AdminChatConversation = {
   lineUserId: string;
   displayName: string | null;
   lastMessageAt: string;
+  unreadCount: number;
   bookings: LinkedBookingSummary[];
   primaryBooking: LinkedBookingSummary | null;
   messages: Array<{
@@ -21,6 +22,7 @@ export type AdminChatThread = {
   lineUserId: string;
   displayName: string | null;
   lastMessageAt: string;
+  unreadCount: number;
   bookings: LinkedBookingSummary[];
   primaryBooking: LinkedBookingSummary | null;
   messages: Array<{
@@ -61,6 +63,18 @@ export async function fetchAdminConversations(): Promise<AdminChatConversation[]
     throw new Error(body.error ?? "Failed to load conversations");
   }
   return res.json() as Promise<AdminChatConversation[]>;
+}
+
+export async function fetchAdminChatUnreadCount(): Promise<number> {
+  const res = await fetch("/api/admin/chat/unread-count", adminFetchInit({ cache: "no-store" }));
+  if (res.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (!res.ok) {
+    return 0;
+  }
+  const body = (await res.json()) as { totalUnread?: number };
+  return body.totalUnread ?? 0;
 }
 
 export async function fetchAdminChatMessages(lineUserId: string): Promise<AdminChatThread> {

@@ -15,6 +15,11 @@ import { LineChatService } from './line-chat.service';
 export class AdminChatController {
   constructor(private readonly lineChat: LineChatService) {}
 
+  @Get('unread-count')
+  getUnreadSummary() {
+    return this.lineChat.getUnreadSummary();
+  }
+
   @Get('conversations')
   listConversations() {
     return this.lineChat.listConversations();
