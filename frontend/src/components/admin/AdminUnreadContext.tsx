@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 
 type AdminUnreadContextValue = {
   chatUnreadCount: number;
@@ -11,11 +11,12 @@ const AdminUnreadContext = createContext<AdminUnreadContextValue | null>(null);
 
 export function AdminUnreadProvider({ children }: { children: ReactNode }) {
   const [chatUnreadCount, setChatUnreadCount] = useState(0);
-  return (
-    <AdminUnreadContext.Provider value={{ chatUnreadCount, setChatUnreadCount }}>
-      {children}
-    </AdminUnreadContext.Provider>
+  const value = useMemo(
+    () => ({ chatUnreadCount, setChatUnreadCount }),
+    [chatUnreadCount],
   );
+
+  return <AdminUnreadContext.Provider value={value}>{children}</AdminUnreadContext.Provider>;
 }
 
 export function useAdminUnread() {

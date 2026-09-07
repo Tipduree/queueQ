@@ -12,6 +12,7 @@ import {
   toLinkedBookingSummary,
   type LinkedBookingSummary,
 } from './line-chat-bookings.util';
+import { LineChatEventsService } from './line-chat-events.service';
 import { LinePushService } from './line-push.service';
 
 type LineWebhookBody = {
@@ -35,6 +36,7 @@ export class LineChatService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly linePush: LinePushService,
+    private readonly lineChatEvents: LineChatEventsService,
   ) {}
 
   async handleWebhook(body: LineWebhookBody) {
@@ -152,6 +154,8 @@ export class LineChatService {
       data: { lastMessageAt: now },
     });
 
+    this.lineChatEvents.emit({ type: 'message', lineUserId });
+
     return message;
   }
 
@@ -185,7 +189,7 @@ export class LineChatService {
       },
     });
 
-    return this.prisma.lineMessage.create({
+    const message = await this.prisma.lineMessage.create({
       data: {
         conversationId: conversation.id,
         direction: LineMessageDirection.INBOUND,
@@ -193,6 +197,10 @@ export class LineChatService {
         lineMessageId: params.lineMessageId ?? null,
       },
     });
+
+    this.lineChatEvents.emit({ type: 'message', lineUserId: params.lineUserId });
+
+    return message;
   }
 
   private async loadBookingsForLineUser(

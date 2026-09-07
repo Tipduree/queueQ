@@ -3,6 +3,7 @@
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { useAdmin } from "@/components/admin/AdminProvider";
 import { useAdminUnread } from "@/components/admin/AdminUnreadContext";
+import { useAdminChatEvents } from "@/components/admin/AdminChatEventsProvider";
 import {
   fetchAdminChatMessages,
   fetchAdminConversations,
@@ -20,7 +21,6 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const CHAT_POLL_MS = 8000;
 const SELECTED_CHAT_STORAGE_KEY = "admin_chat_selected_line_user_id";
 
 function formatTime(iso: string): string {
@@ -114,7 +114,14 @@ export function AdminChatClient() {
   const prevMessageCountRef = useRef(0);
   const selectedIdRef = useRef<string | null>(null);
   const restoredSelectionRef = useRef(false);
+  const lastThreadLoadIdRef = useRef<string | null>(null);
+  const setChatUnreadCountRef = useRef(setChatUnreadCount);
+  const refreshInFlightRef = useRef(false);
   const lineUserIdParam = searchParams.get("lineUserId")?.trim() ?? "";
+
+  useEffect(() => {
+    setChatUnreadCountRef.current = setChatUnreadCount;
+  }, [setChatUnreadCount]);
 
   useEffect(() => {
     selectedIdRef.current = selectedId;
@@ -162,7 +169,7 @@ export function AdminChatClient() {
         const isActive = selectedIdRef.current === row.lineUserId;
         return sum + (isActive ? 0 : (row.unreadCount ?? 0));
       }, 0);
-      setChatUnreadCount(totalUnread);
+      setChatUnreadCountRef.current(totalUnread);
       if (!options?.silent) {
         setError(null);
       }
@@ -177,7 +184,7 @@ export function AdminChatClient() {
       }
       return null;
     }
-  }, [refreshSession, setChatUnreadCount]);
+  }, [refreshSession]);
 
   const loadThread = useCallback(
     async (lineUserId: string, options?: { silent?: boolean }) => {
@@ -221,75 +228,47 @@ export function AdminChatClient() {
     loadThreadRef.current = loadThread;
   }, [loadThread]);
 
-  useEffect(() => {
-    let cancelled = false;
-    let timer: number | null = null;
-
-    async function poll() {
-      if (document.hidden || cancelled) {
-        return;
-      }
-
+  const refreshChat = useCallback(async () => {
+    if (refreshInFlightRef.current) {
+      return;
+    }
+    refreshInFlightRef.current = true;
+    try {
       await loadConversationsRef.current({ silent: true });
       const activeId = selectedIdRef.current;
       if (activeId) {
         await loadThreadRef.current(activeId, { silent: true });
       }
+    } finally {
+      refreshInFlightRef.current = false;
     }
+  }, []);
 
-    function startPolling() {
-      if (timer !== null || cancelled) {
-        return;
-      }
-      void poll();
-      timer = window.setInterval(() => {
-        void poll();
-      }, CHAT_POLL_MS);
-    }
+  useAdminChatEvents(() => {
+    void refreshChat();
+  });
 
-    function stopPolling() {
-      if (timer !== null) {
-        window.clearInterval(timer);
-        timer = null;
-      }
-    }
-
-    function handleVisibilityChange() {
-      if (document.hidden) {
-        stopPolling();
-        return;
-      }
-      startPolling();
-    }
-
+  useEffect(() => {
     setLoading(true);
-    void loadConversationsRef.current().finally(() => {
-      if (!cancelled) {
-        setLoading(false);
-      }
+    void loadConversations().finally(() => {
+      setLoading(false);
     });
-
-    if (!document.hidden) {
-      startPolling();
-    }
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      cancelled = true;
-      stopPolling();
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [setChatUnreadCount]);
+  }, [loadConversations]);
 
   useEffect(() => {
     if (!selectedId) {
+      lastThreadLoadIdRef.current = null;
       setThread(null);
       setThreadLoading(false);
       prevMessageCountRef.current = 0;
       return;
     }
 
+    if (lastThreadLoadIdRef.current === selectedId) {
+      return;
+    }
+
+    lastThreadLoadIdRef.current = selectedId;
     prevMessageCountRef.current = 0;
     void loadThread(selectedId);
   }, [selectedId, loadThread]);

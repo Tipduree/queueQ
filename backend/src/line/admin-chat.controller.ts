@@ -4,16 +4,28 @@ import {
   Get,
   Param,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { AdminApiKeyGuard } from '../auth/admin-api-key.guard';
 import { ReplyChatDto } from './dto/reply-chat.dto';
+import { LineChatEventsService } from './line-chat-events.service';
 import { LineChatService } from './line-chat.service';
 
 @Controller('admin/chat')
 @UseGuards(AdminApiKeyGuard)
 export class AdminChatController {
-  constructor(private readonly lineChat: LineChatService) {}
+  constructor(
+    private readonly lineChat: LineChatService,
+    private readonly lineChatEvents: LineChatEventsService,
+  ) {}
+
+  @Get('updates')
+  async waitForUpdates(@Query('timeout') timeout?: string) {
+    const timeoutMs = Number(timeout ?? 25000);
+    const event = await this.lineChatEvents.waitForNext(timeoutMs);
+    return event ?? { type: 'noop' };
+  }
 
   @Get('unread-count')
   getUnreadSummary() {
