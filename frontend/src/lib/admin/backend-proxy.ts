@@ -4,11 +4,24 @@ import { NextResponse } from "next/server";
 export function adminBackendConfigResponse() {
   if (!getAdminApiKey()) {
     return NextResponse.json(
-      { error: "ADMIN_API_KEY is not configured on Vercel", code: "CONFIG" },
+      {
+        error: "ADMIN_API_KEY is not configured — add it to frontend/.env.local",
+        code: "CONFIG",
+      },
       { status: 503 },
     );
   }
-  if (!API_BASE || API_BASE === "http://localhost:3001") {
+  if (!API_BASE) {
+    return NextResponse.json(
+      {
+        error:
+          "NEXT_PUBLIC_API_URL is not set — use http://localhost:3001 locally or your Render URL in production",
+        code: "CONFIG",
+      },
+      { status: 503 },
+    );
+  }
+  if (API_BASE === "http://localhost:3001" && process.env.VERCEL === "1") {
     return NextResponse.json(
       {
         error:
@@ -24,7 +37,7 @@ export function adminBackendConfigResponse() {
 export function adminBackendErrorResponse(err: unknown) {
   const message =
     err instanceof Error && err.message.includes("ADMIN_API_KEY")
-      ? "ADMIN_API_KEY is not configured on Vercel"
+      ? "ADMIN_API_KEY is not configured — add it to frontend/.env.local"
       : err instanceof Error &&
           (err.message.includes("fetch failed") ||
             err.message.includes("aborted") ||

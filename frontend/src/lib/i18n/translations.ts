@@ -164,7 +164,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "top.language": "ภาษา",
     "top.signin": "เข้าสู่ระบบ",
     "top.signup": "สมัครสมาชิก",
-    "hero.title": "ค้นหาและจองทรีตเมนต์ที่ใช่สำหรับคุณ",
+    "hero.title": "ค้นหาและจอง<br />ทรีตเมนต์ที่ใช่สำหรับคุณ",
     "booking.tab.thai": "นวดแผนไทย",
     "booking.tab.aroma": "อโรมา",
     "booking.tab.spa": "แพ็กเกจสปา",

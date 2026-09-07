@@ -164,10 +164,12 @@
 .spa.spa--ref .hero-ref h1 {
   font-size: clamp(2rem, 4.5vw, 3.4rem);
   font-weight: 700;
-  line-height: 1.15;
-  max-width: 14ch;
+  line-height: 1.2;
+  max-width: min(100%, 22rem);
   margin-bottom: 28px;
   letter-spacing: -0.02em;
+  text-wrap: balance;
+  word-break: keep-all;
 }
 
 .spa.spa--ref .hero-pill {

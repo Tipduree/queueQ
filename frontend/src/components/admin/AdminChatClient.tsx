@@ -78,7 +78,7 @@ function BookingContext({
           </Link>
         </div>
       ) : null}
-      {bookings.filter((booking) => booking.id !== primaryBooking?.id).length > 0 ? (
+      {/* {bookings.filter((booking) => booking.id !== primaryBooking?.id).length > 0 ? (
         <ul className="admin-chat__booking-list">
           {bookings
             .filter((booking) => booking.id !== primaryBooking?.id)
@@ -91,7 +91,7 @@ function BookingContext({
             </li>
           ))}
         </ul>
-      ) : null}
+      ) : null} */}
     </div>
   );
 }
