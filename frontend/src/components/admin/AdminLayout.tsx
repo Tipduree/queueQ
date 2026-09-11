@@ -11,6 +11,7 @@ import { useEffect, useState, type ReactNode } from "react";
 type AdminLayoutProps = {
   children: ReactNode;
   title: string;
+  variant?: "default" | "chat-dashboard";
 };
 
 function UnreadTabBadge({ count }: { count: number }) {
@@ -46,13 +47,60 @@ function AdminUnreadSync({ onChatPage }: { onChatPage: boolean }) {
   return null;
 }
 
-export function AdminLayout({ children, title }: AdminLayoutProps) {
+export function AdminLayout({ children, title, variant = "default" }: AdminLayoutProps) {
   const { authed, login, logout } = useAdmin();
   const { chatUnreadCount, setChatUnreadCount } = useAdminUnread();
   const pathname = usePathname();
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [topbarCollapsed, setTopbarCollapsed] = useState(false);
   const onChatPage = pathname.startsWith("/admin/chat");
+
+  useEffect(() => {
+    if (variant === "chat-dashboard") {
+      return;
+    }
+
+    const collapseAt = 12;
+    let listEl: HTMLElement | null = null;
+
+    function updateCollapsed() {
+      const pageScroll = window.scrollY;
+      const listScroll = listEl?.scrollTop ?? 0;
+      setTopbarCollapsed(Math.max(pageScroll, listScroll) > collapseAt);
+    }
+
+    function bindListScroll() {
+      const next = document.querySelector<HTMLElement>(".admin-customer-panel__booking-list");
+      if (next === listEl) {
+        return;
+      }
+
+      listEl?.removeEventListener("scroll", updateCollapsed);
+      listEl = next;
+      listEl?.addEventListener("scroll", updateCollapsed, { passive: true });
+      updateCollapsed();
+    }
+
+    window.addEventListener("scroll", updateCollapsed, { passive: true });
+    bindListScroll();
+    updateCollapsed();
+
+    const shell = document.querySelector(".admin-shell--wide");
+    const observer =
+      shell &&
+      new MutationObserver(() => {
+        bindListScroll();
+      });
+
+    observer?.observe(shell, { childList: true, subtree: true });
+
+    return () => {
+      window.removeEventListener("scroll", updateCollapsed);
+      listEl?.removeEventListener("scroll", updateCollapsed);
+      observer?.disconnect();
+    };
+  }, [pathname, variant]);
 
   useEffect(() => {
     if (!authed) {
@@ -113,35 +161,46 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
     );
   }
 
+  if (variant === "chat-dashboard") {
+    return (
+      <main className="admin-page admin-page--chat-dash">
+        <AdminUnreadSync onChatPage={onChatPage} />
+        {children}
+      </main>
+    );
+  }
+
   return (
     <main className="admin-page">
       <AdminUnreadSync onChatPage={onChatPage} />
       <div className="admin-shell admin-shell--wide">
-        <header className="admin-header">
-          <div>
-            <p className="admin-eyebrow">Staff dashboard</p>
-            <h1>{title}</h1>
-          </div>
-          <button type="button" className="admin-btn admin-btn--ghost" onClick={() => void logout()}>
-            ออกจากระบบ
-          </button>
-        </header>
+        <div className={`admin-topbar${topbarCollapsed ? " admin-topbar--collapsed" : ""}`}>
+          <header className="admin-header">
+            <div>
+              <p className="admin-eyebrow">Staff dashboard</p>
+              <h1>{title}</h1>
+            </div>
+            <button type="button" className="admin-btn admin-btn--ghost" onClick={() => void logout()}>
+              ออกจากระบบ
+            </button>
+          </header>
 
-        <nav className="admin-tabs" aria-label="Admin sections">
-          <Link
-            href="/admin/bookings"
-            className={`admin-tab${pathname.startsWith("/admin/bookings") ? " admin-tab--active" : ""}`}
-          >
-            จัดการคิว
-          </Link>
-          <Link
-            href="/admin/chat"
-            className={`admin-tab${pathname.startsWith("/admin/chat") ? " admin-tab--active" : ""}`}
-          >
-            แชท LINE
-            <UnreadTabBadge count={chatUnreadCount} />
-          </Link>
-        </nav>
+          <nav className="admin-tabs" aria-label="Admin sections">
+            <Link
+              href="/admin/bookings"
+              className={`admin-tab${pathname.startsWith("/admin/bookings") ? " admin-tab--active" : ""}`}
+            >
+              จัดการคิว
+            </Link>
+            <Link
+              href="/admin/chat"
+              className={`admin-tab${pathname.startsWith("/admin/chat") ? " admin-tab--active" : ""}`}
+            >
+              แชท LINE
+              <UnreadTabBadge count={chatUnreadCount} />
+            </Link>
+          </nav>
+        </div>
 
         {children}
       </div>

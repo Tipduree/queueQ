@@ -2,12 +2,13 @@
 
 import { I18n } from "@/components/spa/I18n";
 import { useQueue } from "@/components/spa/queue/QueueProvider";
+import { useLineGatedBooking } from "@/components/spa/useLineGatedBooking";
 import type { SpaMode } from "@/components/spa/SpaHome";
 
 const navLinks = [
   { href: "#", key: "nav.home", active: true },
   { href: "#services", key: "nav.services", active: false },
-  { href: "#popular", key: "nav.best", active: false },
+  // { href: "#popular", key: "nav.best", active: false },
   { href: "#hours", key: "nav.hours", active: false },
   { href: "#contact", key: "nav.contact", active: false },
 ] as const;
@@ -17,7 +18,8 @@ type HeaderProps = {
 };
 
 export function Header({ mode = "booking" }: HeaderProps) {
-  const { openQueue, cartCount } = useQueue();
+  const { openBookingQueue } = useLineGatedBooking();
+  const { cartCount } = useQueue();
   const isLanding = mode === "landing";
 
   return (
@@ -50,7 +52,7 @@ export function Header({ mode = "booking" }: HeaderProps) {
               type="button"
               className="site-header__queue"
               aria-label="Open booking queue"
-              onClick={openQueue}
+              onClick={openBookingQueue}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <circle cx="12" cy="12" r="9" />

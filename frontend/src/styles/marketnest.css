@@ -1,0 +1,93 @@
+/* MarketNest design tokens — warm artisan marketplace */
+
+:root {
+  --mn-primary: #c2410c;
+  --mn-primary-hover: #9a3412;
+  --mn-primary-active: #7c2d12;
+  --mn-secondary: #d4a373;
+  --mn-tertiary: #365314;
+  --mn-bg: #fffbf5;
+  --mn-bg-hover: #fdf6ec;
+  --mn-surface: #ffffff;
+  --mn-ink: #1c1917;
+  --mn-ink-soft: #57534e;
+  --mn-ink-muted: #a8a29e;
+  --mn-border: #e7e5e4;
+  --mn-border-strong: #d6d3d1;
+  --mn-hover: #e7e5e4;
+  --hover: var(--mn-hover);
+  --mn-success: #22c55e;
+  --mn-success-muted: #dcfce7;
+  --mn-success-text: #166534;
+  --mn-warning: #f59e0b;
+  --mn-warning-muted: #fef3c7;
+  --mn-warning-text: #92400e;
+  --mn-error: #dc2626;
+  --mn-error-muted: #fee2e2;
+  --mn-error-text: #991b1b;
+  --mn-info: #3b82f6;
+
+  --mn-radius-sm: 4px;
+  --mn-radius-md: 8px;
+  --mn-radius-lg: 12px;
+  --mn-radius-xl: 20px;
+  --mn-radius-full: 9999px;
+
+  --mn-focus-ring: 0 0 0 3px rgba(194, 65, 12, 0.2);
+  --mn-overlay-shadow: 8px 8px 24px rgba(28, 25, 23, 0.1);
+
+  --font-display: var(--font-lora, "Lora", Georgia, serif);
+  --font-body: var(--font-open-sans, "Open Sans", system-ui, sans-serif);
+
+  /* Legacy aliases (spa / ref-ui / admin) */
+  --nk-primary: var(--mn-primary);
+  --nk-sand: var(--mn-secondary);
+  --nk-sand-hover: #c49363;
+  --nk-sand-deep: #b8834f;
+  --nk-sand-muted: rgba(212, 163, 115, 0.18);
+  --nk-ocean: var(--mn-primary);
+  --nk-ocean-hover: var(--mn-primary-hover);
+  --nk-ocean-muted: rgba(194, 65, 12, 0.1);
+  --nk-forest: var(--mn-tertiary);
+  --nk-forest-hover: #2d420f;
+  --nk-forest-muted: rgba(54, 83, 20, 0.12);
+  --nk-bg: var(--mn-bg);
+  --nk-bg-alt: var(--mn-bg-hover);
+  --nk-surface: var(--mn-surface);
+  --nk-ink: var(--mn-ink);
+  --nk-ink-soft: var(--mn-ink-soft);
+  --nk-line: var(--mn-border);
+  --nk-success: var(--mn-success-text);
+  --nk-warning: var(--mn-warning-text);
+  --nk-error: var(--mn-error);
+  --nk-info: var(--mn-info);
+  --nk-success-muted: var(--mn-success-muted);
+  --nk-warning-muted: var(--mn-warning-muted);
+  --nk-error-muted: var(--mn-error-muted);
+  --nk-radius: var(--mn-radius-md);
+  --nk-shadow: none;
+  --nk-skeleton: #f5f5f4;
+  --nk-skeleton-shine: var(--mn-bg);
+}
+
+@keyframes mn-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.mn-skeleton,
+.nk-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--nk-skeleton) 25%,
+    var(--nk-skeleton-shine) 50%,
+    var(--nk-skeleton) 75%
+  );
+  background-size: 200% 100%;
+  animation: mn-shimmer 1.4s ease-in-out infinite;
+  border-radius: var(--mn-radius-md);
+}

@@ -15,7 +15,9 @@ const SESSION_STORAGE_KEY = "admin_session_token";
 const LONG_POLL_TIMEOUT_MS = 25000;
 const RETRY_DELAY_MS = 1500;
 
-export type AdminChatEvent = { type: "message"; lineUserId: string };
+export type AdminChatEvent =
+  | { type: "message"; lineUserId: string }
+  | { type: "booking"; lineUserId: string };
 
 type AdminChatEventsContextValue = {
   subscribe: (listener: (event: AdminChatEvent) => void) => () => void;
@@ -77,7 +79,10 @@ export function AdminChatEventsProvider({ children }: { children: ReactNode }) {
         }
 
         const data = (await res.json()) as UpdatesResponse;
-        if (data.type === "message" && data.lineUserId) {
+        if (
+          (data.type === "message" || data.type === "booking") &&
+          data.lineUserId
+        ) {
           for (const listener of listenersRef.current) {
             listener(data);
           }

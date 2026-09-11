@@ -1,7 +1,7 @@
 "use client";
 
 import { I18n } from "@/components/spa/I18n";
-import { useQueue } from "@/components/spa/queue/QueueProvider";
+import { useLineGatedBooking } from "@/components/spa/useLineGatedBooking";
 import type { SpaMode } from "@/components/spa/SpaHome";
 import type { CSSProperties } from "react";
 const starIcon = (
@@ -27,16 +27,16 @@ const treatments: Treatment[] = [
     tagKey: "tag.best",
     rating: "4.9 (243)",
     price: "450 ฿",
-    tint1: "#E4D9BC",
-    tint2: "#C9BB92",
+    tint1: "#FDF6EC",
+    tint2: "#E8C9A8",
   },
   {
     serviceId: "aromatherapy",
     nameKey: "pc2n",
     rating: "4.8 (188)",
     price: "650 ฿",
-    tint1: "#DFD3B6",
-    tint2: "#BDAD82",
+    tint1: "#FAF0E4",
+    tint2: "#DFC19A",
   },
   {
     serviceId: "herbal-scrub",
@@ -44,24 +44,24 @@ const treatments: Treatment[] = [
     tagKey: "tag.new",
     rating: "4.7 (112)",
     price: "1,200 ฿",
-    tint1: "#E7DCC0",
-    tint2: "#CDBE93",
+    tint1: "#FFF8EE",
+    tint2: "#D4A373",
   },
   {
     serviceId: "hot-stone",
     nameKey: "pc4n",
     rating: "4.9 (95)",
     price: "850 ฿",
-    tint1: "#DAD0AE",
-    tint2: "#B8A87A",
+    tint1: "#F5E6D3",
+    tint2: "#C49363",
   },
   {
     serviceId: "prenatal",
     nameKey: "pc5n",
     rating: "4.9 (67)",
     price: "700 ฿",
-    tint1: "#EAE0C4",
-    tint2: "#D2C398",
+    tint1: "#F0E0CE",
+    tint2: "#B8834F",
   },
 ];
 
@@ -70,7 +70,7 @@ type PopularTreatmentsProps = {
 };
 
 export function PopularTreatments({ mode = "booking" }: PopularTreatmentsProps) {
-  const { openQueueWithService } = useQueue();
+  const { openBookingWithService } = useLineGatedBooking();
   const isLanding = mode === "landing";
 
   return (
@@ -106,7 +106,7 @@ export function PopularTreatments({ mode = "booking" }: PopularTreatmentsProps) 
                     type="button"
                     className="add"
                     aria-label="Add to queue"
-                    onClick={() => openQueueWithService(serviceId)}
+                    onClick={() => openBookingWithService(serviceId)}
                   >
                     +
                   </button>

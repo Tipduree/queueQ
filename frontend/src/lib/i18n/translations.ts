@@ -53,6 +53,9 @@ export const translations: Record<Lang, Record<string, string>> = {
     "cat.sub":
       "Everything you need for total relaxation, in one place.",
     "cat.viewall": "View All →",
+    "cat.catalogTitle": "All treatments",
+    "cat.catalogSub":
+      "Browse our full service menu. Sign in with LINE when you are ready to book.",
     c1n: "Thai Massage",
     c1g: "Book Now →",
     c2n: "Aromatherapy",
@@ -164,7 +167,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "top.language": "ภาษา",
     "top.signin": "เข้าสู่ระบบ",
     "top.signup": "สมัครสมาชิก",
-    "hero.title": "ค้นหาและจอง<br />ทรีตเมนต์ที่ใช่สำหรับคุณ",
+    "hero.title": "ค้นหาและจองทรีตเมนต์ที่ใช่สำหรับคุณ",
     "booking.tab.thai": "นวดแผนไทย",
     "booking.tab.aroma": "อโรมา",
     "booking.tab.spa": "แพ็กเกจสปา",
@@ -202,6 +205,9 @@ export const translations: Record<Lang, Record<string, string>> = {
     "cat.sub":
       "เลือกทรีตเมนต์ที่ใช่สำหรับคุณ ครบทุกความต้องการในที่เดียว",
     "cat.viewall": "ดูทั้งหมด →",
+    "cat.catalogTitle": "บริการทั้งหมด",
+    "cat.catalogSub":
+      "ดูรายการทรีตเมนต์ทั้งหมด เมื่อพร้อมจองให้เข้าสู่ระบบด้วย LINE",
     c1n: "นวดแผนไทย",
     c1g: "จองเลย →",
     c2n: "อโรมาออยล์",
@@ -243,7 +249,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "foot.made": "ออกแบบด้วยแรงบันดาลใจจากธรรมชาติ",
     "foot.privacy": "นโยบายความเป็นส่วนตัว",
     "foot.terms": "ข้อกำหนดการใช้บริการ",
-    "line.floatLabel": "เปิด LINE",
+    "line.floatLabel": "add LINE",
     "line.login": "เข้าสู่ระบบ LINE",
     "booking.search": "ค้นหาการจอง",
     "booking.lineLogin": "เข้าสู่ระบบด้วย LINE เพื่อจอง",

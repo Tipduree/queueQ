@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import type { BookingStatus } from '@prisma/client';
+import { LineChatEventsService } from '../line/line-chat-events.service';
 import { LinePushService } from '../line/line-push.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
@@ -47,6 +48,7 @@ export class BookingsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly linePush: LinePushService,
+    private readonly lineChatEvents: LineChatEventsService,
   ) {}
 
   async getAvailability(date: string) {
@@ -216,6 +218,10 @@ export class BookingsService {
       await this.notifyStatusChange(booking, status);
     }
 
+    if (booking.lineUserId) {
+      this.lineChatEvents.emit({ type: 'booking', lineUserId: booking.lineUserId });
+    }
+
     return booking;
   }
 
@@ -249,6 +255,10 @@ export class BookingsService {
           `เวลาใหม่: ${dto.timeSlot}\n\n` +
           `หากมีข้อสงสัย ติดต่อร้านได้เลยค่ะ`,
       });
+    }
+
+    if (booking.lineUserId) {
+      this.lineChatEvents.emit({ type: 'booking', lineUserId: booking.lineUserId });
     }
 
     return booking;

@@ -35,4 +35,29 @@ export class LinePushService {
 
     return true;
   }
+
+  async markAsRead(markAsReadToken: string): Promise<boolean> {
+    const channelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN?.trim();
+    const token = markAsReadToken.trim();
+    if (!channelAccessToken || !token) {
+      this.logger.warn('LINE markAsRead skipped — missing token or channel access token');
+      return false;
+    }
+
+    const res = await fetch('https://api.line.me/v2/bot/chat/markAsRead', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${channelAccessToken}`,
+      },
+      body: JSON.stringify({ markAsReadToken: token }),
+    });
+
+    if (!res.ok) {
+      this.logger.warn(`LINE markAsRead failed: ${await res.text()}`);
+      return false;
+    }
+
+    return true;
+  }
 }

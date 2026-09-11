@@ -3,6 +3,7 @@
 import { useLanguage } from "@/components/spa/LanguageProvider";
 import { useQueue } from "@/components/spa/queue/QueueProvider";
 import { consumePendingBooking } from "@/lib/line/pending-booking";
+import { consumePendingQueueAction } from "@/lib/line/pending-queue-action";
 import { consumeAuthResume, getLineProfile } from "@/lib/line/session";
 import { useEffect, useRef } from "react";
 
@@ -11,6 +12,7 @@ export function LineAuthBridge() {
     setGuest,
     setSelectedDate,
     setSelectedTime,
+    openQueue,
     openQueueWithService,
   } = useQueue();
   const { t } = useLanguage();
@@ -37,18 +39,29 @@ export function LineAuthBridge() {
 
     if (!consumeAuthResume()) return;
 
-    const pending = consumePendingBooking();
-    if (!pending) return;
+    const pendingBooking = consumePendingBooking();
+    if (pendingBooking) {
+      const profile = getLineProfile();
+      setGuest({
+        guests: pendingBooking.guests,
+        name: profile?.displayName ?? "",
+      });
+      setSelectedDate(new Date(`${pendingBooking.date}T12:00:00`));
+      setSelectedTime(pendingBooking.time);
+      openQueueWithService(pendingBooking.serviceSlug);
+      return;
+    }
 
-    const profile = getLineProfile();
-    setGuest({
-      guests: pending.guests,
-      name: profile?.displayName ?? "",
-    });
-    setSelectedDate(new Date(`${pending.date}T12:00:00`));
-    setSelectedTime(pending.time);
-    openQueueWithService(pending.serviceSlug);
+    const pendingQueue = consumePendingQueueAction();
+    if (pendingQueue?.type === "open") {
+      openQueue();
+      return;
+    }
+    if (pendingQueue?.type === "withService") {
+      openQueueWithService(pendingQueue.serviceId);
+    }
   }, [
+    openQueue,
     openQueueWithService,
     setGuest,
     setSelectedDate,

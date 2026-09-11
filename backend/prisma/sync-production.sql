@@ -53,6 +53,8 @@ END $$;
 
 ALTER TABLE "line_conversations" ADD COLUMN IF NOT EXISTS "admin_read_at" TIMESTAMP(3);
 
+ALTER TABLE "line_messages" ADD COLUMN IF NOT EXISTS "mark_as_read_token" TEXT;
+
 -- Verify (should include line_conversations + line_messages):
 -- SELECT table_name FROM information_schema.tables
 -- WHERE table_schema = 'public' AND table_name LIKE 'line_%'

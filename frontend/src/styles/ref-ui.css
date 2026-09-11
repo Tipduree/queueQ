@@ -1,24 +1,24 @@
 /* Flivain-inspired ref UI for Suan Bai Spa */
 
 .spa.spa--ref {
-  --bg: #ffffff;
-  --bg-alt: #f8fafc;
-  --card: #ffffff;
-  --ink: #0f172a;
-  --ink-soft: #64748b;
-  --olive: #2563eb;
-  --olive-dark: #1d4ed8;
-  --olive-deep: #1e3a8a;
-  --line: #e2e8f0;
-  --star: #2563eb;
-  --radius: 12px;
+  --bg: var(--mn-bg);
+  --bg-alt: var(--mn-bg-hover);
+  --card: var(--mn-surface);
+  --ink: var(--mn-ink);
+  --ink-soft: var(--mn-ink-soft);
+  --olive: var(--mn-primary);
+  --olive-dark: var(--mn-primary-hover);
+  --olive-deep: var(--mn-tertiary);
+  --line: var(--mn-border);
+  --star: var(--mn-secondary);
+  --radius: var(--mn-radius-md);
   --maxw: 1180px;
-  --shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+  --shadow: var(--mn-overlay-shadow);
 }
 
 .spa.spa--ref .top-bar {
   border-bottom: 1px solid var(--line);
-  background: #fff;
+  background: var(--mn-surface);
 }
 
 .spa.spa--ref .top-bar__inner {
@@ -66,7 +66,7 @@
 }
 
 .spa.spa--ref .site-header {
-  background: #fff;
+  background: var(--mn-surface);
   border-bottom: 1px solid var(--line);
   position: sticky;
   top: 0;
@@ -138,7 +138,7 @@
   justify-content: center;
   padding: 10px 22px;
   border-radius: 999px;
-  background: var(--olive-deep);
+  background: var(--olive);
   color: #fff;
   font-size: 0.84rem;
   font-weight: 600;
@@ -151,7 +151,7 @@
 
 .spa.spa--ref .hero-ref {
   padding: 48px 0 0;
-  background: #fff;
+  background: var(--mn-surface);
 }
 
 .spa.spa--ref .hero-ref__inner {
@@ -165,11 +165,10 @@
   font-size: clamp(2rem, 4.5vw, 3.4rem);
   font-weight: 700;
   line-height: 1.2;
-  max-width: min(100%, 22rem);
   margin-bottom: 28px;
   letter-spacing: -0.02em;
-  text-wrap: balance;
-  word-break: keep-all;
+  white-space: nowrap;
+  text-wrap: nowrap;
 }
 
 .spa.spa--ref .hero-pill {
@@ -194,7 +193,7 @@
   z-index: 2;
   width: min(980px, calc(100% - 24px));
   margin: 32px auto 56px;
-  background: #fff;
+  background: var(--mn-surface);
   border-radius: 20px;
   box-shadow: var(--shadow);
   border: 1px solid var(--line);
@@ -297,7 +296,7 @@
   display: block;
   margin-top: 4px;
   font-size: 0.72rem;
-  color: #b45309;
+  color: var(--mn-warning-text);
 }
 
 .spa.spa--ref .booking-card__search--line {
@@ -315,7 +314,7 @@
 
 .spa.spa--ref .support-section {
   padding: 120px 0 56px;
-  background: #fff;
+  background: var(--mn-surface);
 }
 
 .spa.spa--ref .support-section__inner {
@@ -346,7 +345,7 @@
 
 .spa.spa--ref .highlight-section {
   padding: 24px 0 80px;
-  background: #fff;
+  background: var(--mn-surface);
 }
 
 .spa.spa--ref .highlight-section__grid {
@@ -361,7 +360,7 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: rgba(37, 99, 235, 0.12);
+  background: rgba(194, 65, 12, 0.12);
   color: var(--olive);
   align-items: center;
   justify-content: center;
@@ -409,11 +408,11 @@
 .spa.spa--ref .treat-card {
   border-radius: 16px;
   border: 1px solid var(--line);
-  background: #fff;
+  background: var(--mn-surface);
 }
 
 .spa.spa--ref footer {
-  background: var(--olive-deep);
+  background: var(--mn-primary);
 }
 
 .spa.spa--ref .queue-count {
@@ -467,6 +466,10 @@
   .spa.spa--ref .hero-ref {
     padding-top: 28px;
   }
+
+  .spa.spa--ref .hero-ref h1 {
+    font-size: clamp(1.35rem, 4.2vw, 2rem);
+  }
 }
 
 .spa.spa--ref .cat-card--static {
@@ -501,7 +504,7 @@
 
 .liff-history {
   min-height: 100vh;
-  background: #f7f6f1;
+  background: var(--mn-bg);
   padding: 24px 0 40px;
 }
 
@@ -540,13 +543,13 @@
 }
 
 .liff-history__message--error {
-  color: #b42318;
+  color: var(--mn-error-text);
 }
 
 .liff-history__empty {
   text-align: center;
   padding: 40px 16px;
-  background: #fff;
+  background: var(--mn-surface);
   border-radius: 16px;
   border: 1px solid var(--line);
 }
@@ -561,7 +564,7 @@
 }
 
 .liff-history__card {
-  background: #fff;
+  background: var(--mn-surface);
   border: 1px solid var(--line);
   border-radius: 16px;
   padding: 16px;
@@ -586,19 +589,19 @@
   font-weight: 600;
   padding: 4px 10px;
   border-radius: 999px;
-  background: #eef0e8;
-  color: var(--ink-soft);
+  background: var(--mn-bg-hover);
+  color: var(--mn-ink-soft);
 }
 
 .liff-history__status--confirmed,
 .liff-history__status--completed {
-  background: #e8f5eb;
-  color: #1b6b3a;
+  background: var(--mn-success-muted);
+  color: var(--mn-success-text);
 }
 
 .liff-history__status--pending {
-  background: #fff6e6;
-  color: #9a6700;
+  background: var(--mn-warning-muted);
+  color: var(--mn-warning-text);
 }
 
 .liff-history__datetime {

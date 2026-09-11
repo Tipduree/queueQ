@@ -12,100 +12,85 @@ import {
   type AdminChatThread,
 } from "@/lib/admin/chat-api";
 import {
-  ADMIN_BOOKING_STATUS_LABELS,
-  bookingManageDate,
-  formatBookingWhen,
-  type LinkedBookingSummary,
-} from "@/lib/admin/labels";
+  CustomerAvatar,
+  customerDisplayName,
+} from "@/components/admin/admin-customer-display";
+import { ADMIN_BOOKING_STATUS_LABELS } from "@/lib/admin/labels";
+import {
+  CalendarDays,
+  LogOut,
+  MessageSquare,
+  MoreVertical,
+  PanelLeft,
+  PanelLeftClose,
+  Paperclip,
+  Search,
+  Send,
+  Smile,
+  Sparkles,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const SELECTED_CHAT_STORAGE_KEY = "admin_chat_selected_line_user_id";
+const SIDEBAR_COLLAPSED_STORAGE_KEY = "admin_chat_sidebar_collapsed";
 
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleString("th-TH", {
-    day: "numeric",
-    month: "short",
+type MessageItem = AdminChatThread["messages"][number];
+
+function formatRelativeTime(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(diffMs / 60_000);
+  if (minutes < 1) return "ตอนนี้";
+  if (minutes < 60) return `${minutes} น.`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} ช.`;
+  return new Date(iso).toLocaleDateString("th-TH", { day: "numeric", month: "short" });
+}
+
+function formatMessageTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString("th-TH", {
     hour: "2-digit",
     minute: "2-digit",
+    hour12: false,
   });
 }
 
-function displayName(conversation: Pick<AdminChatConversation, "displayName" | "lineUserId">) {
-  return conversation.displayName?.trim() || conversation.lineUserId.slice(0, 8);
+function formatDateDivider(iso: string): string {
+  return new Date(iso).toLocaleDateString("th-TH", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 }
 
-function BookingContext({
-  bookings,
-  primaryBooking,
-}: {
-  bookings: LinkedBookingSummary[];
-  primaryBooking: LinkedBookingSummary | null;
-}) {
-  if (bookings.length === 0) {
-    return (
-      <div className="admin-chat__booking admin-chat__booking--empty">
-        <p className="admin-chat__booking-title">คิวที่เกี่ยวข้อง</p>
-        <p className="admin-muted">ยังไม่มีการจองจาก LINE user นี้</p>
-      </div>
-    );
+function groupMessagesByDate(messages: MessageItem[]): Array<{ date: string; messages: MessageItem[] }> {
+  const groups: Array<{ date: string; messages: MessageItem[] }> = [];
+  for (const message of messages) {
+    const date = formatDateDivider(message.createdAt);
+    const last = groups[groups.length - 1];
+    if (last?.date === date) {
+      last.messages.push(message);
+    } else {
+      groups.push({ date, messages: [message] });
+    }
   }
-
-  return (
-    <div className="admin-chat__booking">
-      <p className="admin-chat__booking-title">คิวที่เกี่ยวข้อง</p>
-      {primaryBooking ? (
-        <div className="admin-chat__booking-primary">
-          <div className="admin-chat__booking-row">
-            <strong>{primaryBooking.queueNumber}</strong>
-            <span className={`admin-badge admin-badge--${primaryBooking.status.toLowerCase()}`}>
-              {ADMIN_BOOKING_STATUS_LABELS[primaryBooking.status]}
-            </span>
-          </div>
-          <p>
-            {primaryBooking.guestName} · {primaryBooking.guestPhone}
-          </p>
-          <p>{formatBookingWhen(primaryBooking)}</p>
-          <p className="admin-muted">
-            {primaryBooking.guestCount} ท่าน · {primaryBooking.totalPrice.toLocaleString()} ฿
-          </p>
-          <Link
-            href={`/admin/bookings?date=${encodeURIComponent(bookingManageDate(primaryBooking))}`}
-            className="admin-btn admin-chat__booking-link"
-          >
-            ไปจัดการคิว
-          </Link>
-        </div>
-      ) : null}
-      {/* {bookings.filter((booking) => booking.id !== primaryBooking?.id).length > 0 ? (
-        <ul className="admin-chat__booking-list">
-          {bookings
-            .filter((booking) => booking.id !== primaryBooking?.id)
-            .map((booking) => (
-            <li key={booking.id}>
-              <span>{booking.queueNumber}</span>
-              <span className="admin-muted">
-                {ADMIN_BOOKING_STATUS_LABELS[booking.status]} · {formatBookingWhen(booking)}
-              </span>
-            </li>
-          ))}
-        </ul>
-      ) : null} */}
-    </div>
-  );
+  return groups;
 }
 
 export function AdminChatClient() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { refreshSession } = useAdmin();
-  const { setChatUnreadCount } = useAdminUnread();
+  const { refreshSession, logout } = useAdmin();
+  const { chatUnreadCount, setChatUnreadCount } = useAdminUnread();
   const [conversations, setConversations] = useState<AdminChatConversation[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [thread, setThread] = useState<AdminChatThread | null>(null);
   const [reply, setReply] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [threadMenuOpen, setThreadMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [threadLoading, setThreadLoading] = useState(false);
   const [sending, setSending] = useState(false);
@@ -117,11 +102,45 @@ export function AdminChatClient() {
   const lastThreadLoadIdRef = useRef<string | null>(null);
   const setChatUnreadCountRef = useRef(setChatUnreadCount);
   const refreshInFlightRef = useRef(false);
+  const threadMenuRef = useRef<HTMLDivElement | null>(null);
   const lineUserIdParam = searchParams.get("lineUserId")?.trim() ?? "";
 
   useEffect(() => {
     setChatUnreadCountRef.current = setChatUnreadCount;
   }, [setChatUnreadCount]);
+
+  useEffect(() => {
+    if (localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === "1") {
+      setSidebarCollapsed(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    setThreadMenuOpen(false);
+  }, [selectedId]);
+
+  useEffect(() => {
+    if (!threadMenuOpen) {
+      return;
+    }
+
+    function handlePointerDown(event: MouseEvent) {
+      if (!threadMenuRef.current?.contains(event.target as Node)) {
+        setThreadMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, [threadMenuOpen]);
+
+  const toggleSidebar = useCallback(() => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, next ? "1" : "0");
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     selectedIdRef.current = selectedId;
@@ -299,129 +318,289 @@ export function AdminChatClient() {
     }
   }
 
-  const selectedConversation = conversations.find((c) => c.lineUserId === selectedId);
+  const selectedConversation = conversations.find((c) => c.lineUserId === selectedId) ?? null;
+  const filteredConversations = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return conversations;
+    return conversations.filter((conversation) => {
+      const name = customerDisplayName(conversation).toLowerCase();
+      const preview = conversation.messages[0]?.text?.toLowerCase() ?? "";
+      return name.includes(q) || preview.includes(q) || conversation.lineUserId.toLowerCase().includes(q);
+    });
+  }, [conversations, searchQuery]);
+
+  const messageGroups = useMemo(
+    () => groupMessagesByDate(thread?.messages ?? []),
+    [thread?.messages],
+  );
+
+  const customerName = selectedConversation
+    ? customerDisplayName(selectedConversation)
+    : thread
+      ? customerDisplayName(thread)
+      : "";
 
   return (
-    <AdminLayout title="แชท LINE">
-      {loading ? <p className="admin-muted">กำลังโหลด…</p> : null}
-      {error ? <p className="admin-error">{error}</p> : null}
+    <AdminLayout title="แชท LINE" variant="chat-dashboard">
+      <div
+        className={`admin-chat-dash${sidebarCollapsed ? " admin-chat-dash--sidebar-collapsed" : ""}`}
+      >
+        <aside
+          className="admin-chat-dash__sidebar"
+          aria-label="เมนูหลัก"
+          aria-expanded={!sidebarCollapsed}
+        >
+          <div className="admin-chat-dash__brand">
+            <span className="admin-chat-dash__brand-mark" aria-hidden="true">
+              <Sparkles size={18} strokeWidth={2.2} />
+            </span>
+            <span className="admin-chat-dash__brand-text">Suan Bai</span>
+          </div>
 
-      <div className="admin-chat">
-        <aside className="admin-chat__list admin-card">
-          <p className="admin-chat__list-title">ข้อความจากลูกค้า</p>
-          {conversations.length === 0 ? (
-            <p className="admin-muted">ยังไม่มีข้อความ — ให้ลูกค้าทัก LINE OA ก่อน</p>
-          ) : (
-            <ul className="admin-chat__conversations">
-              {conversations.map((conversation) => {
-                const preview = conversation.messages[0]?.text ?? "";
-                const isActive = selectedId === conversation.lineUserId;
-                const pending = conversation.primaryBooking?.status === "PENDING";
-                const unreadCount = isActive ? 0 : (conversation.unreadCount ?? 0);
-                return (
-                  <li key={conversation.id}>
-                    <button
-                      type="button"
-                      className={`admin-chat__conversation${isActive ? " admin-chat__conversation--active" : ""}`}
-                      onClick={() => selectConversation(conversation.lineUserId)}
-                    >
-                      <span className="admin-chat__conversation-top">
-                        <span className="admin-chat__conversation-name">
-                          {displayName(conversation)}
-                        </span>
-                        <span className="admin-chat__conversation-badges">
-                          {unreadCount > 0 ? (
-                            <span className="admin-unread-badge" aria-label={`${unreadCount} ข้อความใหม่`}>
-                              {unreadCount > 99 ? "99+" : unreadCount}
-                            </span>
-                          ) : null}
-                          {pending && conversation.primaryBooking ? (
-                            <span className="admin-badge admin-badge--pending">
-                              {conversation.primaryBooking.queueNumber}
-                            </span>
-                          ) : null}
-                        </span>
-                      </span>
-                      <span className="admin-chat__conversation-preview">{preview}</span>
-                      {conversation.primaryBooking ? (
-                        <span className="admin-chat__conversation-booking">
-                          {ADMIN_BOOKING_STATUS_LABELS[conversation.primaryBooking.status]} ·{" "}
-                          {formatBookingWhen(conversation.primaryBooking)}
-                        </span>
-                      ) : null}
-                      <span className="admin-chat__conversation-time">
-                        {formatTime(conversation.lastMessageAt)}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+          <nav className="admin-chat-dash__nav">
+            <Link
+              href="/admin/bookings"
+              className={`admin-chat-dash__nav-item${pathname.startsWith("/admin/bookings") ? " admin-chat-dash__nav-item--active" : ""}`}
+              title="จัดการคิว"
+            >
+              <CalendarDays size={18} strokeWidth={2} />
+              <span className="admin-chat-dash__nav-label">จัดการคิว</span>
+            </Link>
+            <Link
+              href="/admin/chat"
+              className={`admin-chat-dash__nav-item${pathname.startsWith("/admin/chat") ? " admin-chat-dash__nav-item--active" : ""}`}
+              title="แชท LINE"
+            >
+              <MessageSquare size={18} strokeWidth={2} />
+              <span className="admin-chat-dash__nav-label">แชท LINE</span>
+              {chatUnreadCount > 0 ? (
+                <span className="admin-chat-dash__nav-badge">
+                  {chatUnreadCount > 99 ? "99+" : chatUnreadCount}
+                </span>
+              ) : null}
+            </Link>
+          </nav>
+
+          <div className="admin-chat-dash__sidebar-foot">
+            <button
+              type="button"
+              className="admin-chat-dash__sidebar-toggle"
+              onClick={toggleSidebar}
+              aria-label={sidebarCollapsed ? "ขยายเมนู" : "ย่อเมนู"}
+              title={sidebarCollapsed ? "ขยายเมนู" : "ย่อเมนู"}
+            >
+              {sidebarCollapsed ? (
+                <PanelLeft size={18} strokeWidth={2} />
+              ) : (
+                <PanelLeftClose size={18} strokeWidth={2} />
+              )}
+              <span className="admin-chat-dash__nav-label">
+                {sidebarCollapsed ? "ขยาย" : "ย่อเมนู"}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              className="admin-chat-dash__logout"
+              onClick={() => void logout()}
+              title="ออกจากระบบ"
+            >
+              <LogOut size={18} strokeWidth={2} />
+              <span className="admin-chat-dash__nav-label">ออกจากระบบ</span>
+            </button>
+          </div>
         </aside>
 
-        <section className="admin-chat__panel admin-card">
-          {!selectedId ? (
-            <div className="admin-chat__empty">
-              <p className="admin-muted">เลือกแชทจากรายการด้านซ้าย</p>
-            </div>
-          ) : threadLoading && !thread ? (
-            <div className="admin-chat__empty">
-              <p className="admin-muted">กำลังโหลดแชท…</p>
-            </div>
-          ) : !thread ? (
-            <div className="admin-chat__empty">
-              <p className="admin-muted">ไม่พบแชทนี้</p>
-            </div>
-          ) : (
-            <>
-              <header className="admin-chat__header">
-                <div>
-                  <p className="admin-chat__header-name">
-                    {displayName(selectedConversation ?? thread)}
-                  </p>
-                  <p className="admin-muted admin-chat__header-id">{thread.lineUserId}</p>
-                </div>
-              </header>
+        <div className="admin-chat-dash__workspace">
+          {loading ? (
+            <p className="admin-chat-dash__banner admin-muted">กำลังโหลด…</p>
+          ) : null}
+          {error ? <p className="admin-chat-dash__banner admin-error">{error}</p> : null}
 
-              <BookingContext
-                bookings={thread.bookings}
-                primaryBooking={thread.primaryBooking}
-              />
-
-              <div className="admin-chat__messages">
-                {thread.messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`admin-chat__bubble admin-chat__bubble--${message.direction.toLowerCase()}`}
-                  >
-                    <p>{message.text}</p>
-                    <time>{formatTime(message.createdAt)}</time>
-                  </div>
-                ))}
-                <div ref={messagesEndRef} />
+          <aside className="admin-chat-dash__inbox">
+            <header className="admin-chat-dash__inbox-head">
+              <div>
+                <h1 className="admin-chat-dash__inbox-title">Chat</h1>
+                <p className="admin-chat-dash__inbox-sub">
+                  Inbox
+                  {chatUnreadCount > 0 ? (
+                    <span className="admin-chat-dash__inbox-pill">{chatUnreadCount} new</span>
+                  ) : null}
+                </p>
               </div>
+            </header>
 
-              <form className="admin-chat__composer" onSubmit={(e) => void handleSend(e)}>
-                <textarea
-                  value={reply}
-                  onChange={(e) => setReply(e.target.value)}
-                  placeholder="พิมพ์ข้อความตอบกลับ..."
-                  rows={3}
-                  maxLength={2000}
-                  required
-                />
-                <button
-                  type="submit"
-                  className="admin-btn admin-btn--primary"
-                  disabled={sending || !reply.trim()}
-                >
-                  {sending ? "กำลังส่ง…" : "ส่งข้อความ"}
-                </button>
-              </form>
-            </>
-          )}
-        </section>
+            <label className="admin-chat-dash__search">
+              <Search size={16} strokeWidth={2} aria-hidden="true" />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="ค้นหา…"
+                aria-label="ค้นหาแชท"
+              />
+            </label>
+
+            {filteredConversations.length === 0 ? (
+              <p className="admin-muted admin-chat-dash__inbox-empty">
+                {conversations.length === 0
+                  ? "ยังไม่มีข้อความ — ให้ลูกค้าทัก LINE OA ก่อน"
+                  : "ไม่พบแชทที่ตรงกับคำค้นหา"}
+              </p>
+            ) : (
+              <ul className="admin-chat-dash__contacts">
+                {filteredConversations.map((conversation) => {
+                  const name = customerDisplayName(conversation);
+                  const preview = conversation.messages[0]?.text ?? "";
+                  const isActive = selectedId === conversation.lineUserId;
+                  const unreadCount = isActive ? 0 : (conversation.unreadCount ?? 0);
+                  const bookingHint = conversation.primaryBooking
+                    ? `${ADMIN_BOOKING_STATUS_LABELS[conversation.primaryBooking.status]} · ${conversation.primaryBooking.queueNumber}`
+                    : "LINE Customer";
+
+                  return (
+                    <li key={conversation.id}>
+                      <button
+                        type="button"
+                        className={`admin-chat-dash__contact${isActive ? " admin-chat-dash__contact--active" : ""}`}
+                        onClick={() => selectConversation(conversation.lineUserId)}
+                      >
+                        <CustomerAvatar name={name} seed={conversation.lineUserId} size="md" />
+                        <span className="admin-chat-dash__contact-body">
+                          <span className="admin-chat-dash__contact-top">
+                            <span className="admin-chat-dash__contact-name">{name}</span>
+                            <span className="admin-chat-dash__contact-time">
+                              {formatRelativeTime(conversation.lastMessageAt)}
+                            </span>
+                          </span>
+                          <span className="admin-chat-dash__contact-role">{bookingHint}</span>
+                          <span className="admin-chat-dash__contact-preview">{preview}</span>
+                        </span>
+                        {unreadCount > 0 ? (
+                          <span className="admin-chat-dash__contact-unread">{unreadCount}</span>
+                        ) : null}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </aside>
+
+          <section className="admin-chat-dash__thread">
+            {!selectedId ? (
+              <div className="admin-chat-dash__thread-empty">
+                <p className="admin-muted">เลือกแชทจากรายการ Inbox</p>
+              </div>
+            ) : threadLoading && !thread ? (
+              <div className="admin-chat-dash__thread-empty">
+                <p className="admin-muted">กำลังโหลดแชท…</p>
+              </div>
+            ) : !thread ? (
+              <div className="admin-chat-dash__thread-empty">
+                <p className="admin-muted">ไม่พบแชทนี้</p>
+              </div>
+            ) : (
+              <>
+                <header className="admin-chat-dash__thread-head">
+                  <div className="admin-chat-dash__thread-user">
+                    <CustomerAvatar name={customerName} seed={thread.lineUserId} size="md" />
+                    <div>
+                      <p className="admin-chat-dash__thread-name">{customerName}</p>
+                      <p className="admin-chat-dash__thread-role">LINE Customer</p>
+                    </div>
+                  </div>
+                  <div className="admin-chat-dash__thread-menu" ref={threadMenuRef}>
+                    <button
+                      type="button"
+                      className="admin-chat-dash__icon-btn"
+                      aria-label="ตัวเลือกเพิ่มเติม"
+                      aria-expanded={threadMenuOpen}
+                      onClick={() => setThreadMenuOpen((open) => !open)}
+                    >
+                      <MoreVertical size={18} />
+                    </button>
+                    {threadMenuOpen ? (
+                      <div className="admin-chat-dash__dropdown" role="menu">
+                        <Link
+                          href={`/admin/bookings?lineUserId=${encodeURIComponent(thread.lineUserId)}`}
+                          className="admin-chat-dash__dropdown-item"
+                          role="menuitem"
+                          onClick={() => setThreadMenuOpen(false)}
+                        >
+                          จัดการคิว
+                        </Link>
+                      </div>
+                    ) : null}
+                  </div>
+                </header>
+
+                <div className="admin-chat-dash__messages">
+                  {messageGroups.map((group) => (
+                    <div key={group.date} className="admin-chat-dash__message-group">
+                      <p className="admin-chat-dash__date-divider">{group.date}</p>
+                      {group.messages.map((message) => {
+                        const isInbound = message.direction === "INBOUND";
+                        return (
+                          <div
+                            key={message.id}
+                            className={`admin-chat-dash__message admin-chat-dash__message--${message.direction.toLowerCase()}`}
+                          >
+                            {isInbound ? (
+                              <CustomerAvatar name={customerName} seed={thread.lineUserId} size="sm" />
+                            ) : null}
+                            <div className="admin-chat-dash__message-body">
+                              <div
+                                className={`admin-chat-dash__bubble admin-chat-dash__bubble--${message.direction.toLowerCase()}`}
+                              >
+                                <p>{message.text}</p>
+                              </div>
+                              <time
+                                className="admin-chat-dash__message-time"
+                                dateTime={message.createdAt}
+                              >
+                                {formatMessageTime(message.createdAt)}
+                              </time>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                <form className="admin-chat-dash__composer" onSubmit={(e) => void handleSend(e)}>
+                  <input
+                    type="text"
+                    value={reply}
+                    onChange={(e) => setReply(e.target.value)}
+                    placeholder="Write a message…"
+                    maxLength={2000}
+                    required
+                    aria-label="ข้อความตอบกลับ"
+                  />
+                  <div className="admin-chat-dash__composer-actions">
+                    <button type="button" className="admin-chat-dash__icon-btn" aria-label="แนบไฟล์">
+                      <Paperclip size={18} />
+                    </button>
+                    <button type="button" className="admin-chat-dash__icon-btn" aria-label="อีโมจิ">
+                      <Smile size={18} />
+                    </button>
+                    <button
+                      type="submit"
+                      className="admin-chat-dash__send-btn"
+                      disabled={sending || !reply.trim()}
+                      aria-label="ส่งข้อความ"
+                    >
+                      <Send size={16} strokeWidth={2.2} />
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
+          </section>
+        </div>
       </div>
     </AdminLayout>
   );

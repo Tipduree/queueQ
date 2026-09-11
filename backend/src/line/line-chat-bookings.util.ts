@@ -26,14 +26,9 @@ export function toLinkedBookingSummary(booking: Booking): LinkedBookingSummary {
   };
 }
 
+/** Most recent booking (list must be ordered bookingDate desc, timeSlot desc). */
 export function pickPrimaryBooking(
   bookings: LinkedBookingSummary[],
 ): LinkedBookingSummary | null {
-  const pending = bookings.find((booking) => booking.status === 'PENDING');
-  if (pending) return pending;
-
-  const confirmed = bookings.find((booking) => booking.status === 'CONFIRMED');
-  if (confirmed) return confirmed;
-
   return bookings[0] ?? null;
 }

@@ -36,12 +36,13 @@ export function SpaHome({ mode = "landing" }: SpaHomeProps) {
           {isBooking ? null : <AnnouncementBar />}
           <Header mode={mode} />
           <TopBar mode={mode} />
-          <Hero showBookingCard />
+          <Hero />
+          {/* <Hero showBookingCard /> */}
           {isBooking ? null : <FeatureStrip />}
           <SupportSection />
           <HighlightSection />
           <ServicesSection mode={mode} />
-          <PopularTreatments mode={mode} />
+          {/* <PopularTreatments mode={mode} /> */}
           <Footer mode={mode} />
           {!isBooking ? <LineFloatButton /> : null}
           <QueuePanel />

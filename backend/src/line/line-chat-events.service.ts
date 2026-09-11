@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { Observable, Subject } from 'rxjs';
 
-export type LineChatEvent = { type: 'message'; lineUserId: string };
+export type LineChatEvent =
+  | { type: 'message'; lineUserId: string }
+  | { type: 'booking'; lineUserId: string };
 
 type Waiter = {
   resolve: (event: LineChatEvent) => void;

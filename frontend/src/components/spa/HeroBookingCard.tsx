@@ -3,6 +3,10 @@
 import { I18n } from "@/components/spa/I18n";
 import { useLanguage } from "@/components/spa/LanguageProvider";
 import { useQueue } from "@/components/spa/queue/QueueProvider";
+import { useLineGatedBooking } from "@/components/spa/useLineGatedBooking";
+import { isLineLoginConfigured } from "@/lib/line/config";
+import { startLineLogin } from "@/lib/line/auth";
+import { savePendingBooking } from "@/lib/line/pending-booking";
 import { getLineProfile } from "@/lib/line/session";
 import { TIME_SLOTS, toDateString } from "@/lib/queue/types";
 import { useState } from "react";
@@ -18,11 +22,11 @@ export function HeroBookingCard() {
     services,
     servicesLoading,
     servicesError,
-    openQueueWithService,
     setSelectedDate,
     setSelectedTime,
     setGuest,
   } = useQueue();
+  const { openBookingWithService } = useLineGatedBooking();
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState(0);
   const [selectedServiceSlug, setSelectedServiceSlug] = useState<string>(TABS[0].slug);
@@ -56,7 +60,19 @@ export function HeroBookingCard() {
     setGuest({ guests, name: profile?.displayName ?? "" });
     setSelectedDate(new Date(`${date}T12:00:00`));
     setSelectedTime(time);
-    openQueueWithService(serviceSlug);
+
+    if (isLineLoginConfigured() && !profile) {
+      savePendingBooking({
+        serviceSlug,
+        date,
+        time,
+        guests,
+      });
+      startLineLogin();
+      return;
+    }
+
+    openBookingWithService(serviceSlug);
   };
 
   return (

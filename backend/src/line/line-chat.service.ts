@@ -22,6 +22,7 @@ type LineWebhookBody = {
       type?: string;
       id?: string;
       text?: string;
+      markAsReadToken?: string;
     };
     source?: {
       userId?: string;
@@ -55,6 +56,7 @@ export class LineChatService {
         lineUserId,
         text,
         lineMessageId: event.message.id,
+        markAsReadToken: event.message.markAsReadToken,
       });
     }
   }
@@ -109,6 +111,8 @@ export class LineChatService {
 
     const bookings = await this.loadBookingsForLineUser(lineUserId);
 
+    await this.markLineMessagesReadForAdmin(conversation);
+
     await this.prisma.lineConversation.update({
       where: { id: conversation.id },
       data: { adminReadAt: new Date() },
@@ -159,10 +163,43 @@ export class LineChatService {
     return message;
   }
 
+  private async markLineMessagesReadForAdmin(conversation: {
+    id: string;
+    adminReadAt: Date | null;
+    messages: Array<{
+      direction: LineMessageDirection;
+      createdAt: Date;
+      markAsReadToken: string | null;
+    }>;
+  }) {
+    const readCursor = conversation.adminReadAt;
+    const unreadInbound = conversation.messages.filter(
+      (message) =>
+        message.direction === LineMessageDirection.INBOUND &&
+        (!readCursor || message.createdAt > readCursor),
+    );
+
+    const latestWithToken = [...unreadInbound]
+      .reverse()
+      .find((message) => message.markAsReadToken?.trim());
+
+    if (!latestWithToken?.markAsReadToken) {
+      return;
+    }
+
+    const marked = await this.linePush.markAsRead(latestWithToken.markAsReadToken);
+    if (!marked) {
+      this.logger.warn(
+        `Failed to mark LINE messages as read for conversation ${conversation.id}`,
+      );
+    }
+  }
+
   private async storeInboundMessage(params: {
     lineUserId: string;
     text: string;
     lineMessageId?: string;
+    markAsReadToken?: string;
   }) {
     if (params.lineMessageId) {
       const existing = await this.prisma.lineMessage.findUnique({
@@ -195,6 +232,7 @@ export class LineChatService {
         direction: LineMessageDirection.INBOUND,
         text: params.text,
         lineMessageId: params.lineMessageId ?? null,
+        markAsReadToken: params.markAsReadToken?.trim() || null,
       },
     });
 
@@ -207,10 +245,7 @@ export class LineChatService {
     lineUserId: string,
   ): Promise<LinkedBookingSummary[]> {
     const bookings = await this.prisma.booking.findMany({
-      where: {
-        lineUserId,
-        status: { not: 'CANCELLED' },
-      },
+      where: { lineUserId },
       orderBy: [{ bookingDate: 'desc' }, { timeSlot: 'desc' }],
       take: 10,
     });
@@ -224,10 +259,7 @@ export class LineChatService {
     }
 
     const bookings = await this.prisma.booking.findMany({
-      where: {
-        lineUserId: { in: lineUserIds },
-        status: { not: 'CANCELLED' },
-      },
+      where: { lineUserId: { in: lineUserIds } },
       orderBy: [{ bookingDate: 'desc' }, { timeSlot: 'desc' }],
     });
 
