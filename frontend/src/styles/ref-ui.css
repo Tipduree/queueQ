@@ -43,8 +43,7 @@
   color: var(--ink-soft);
 }
 
-.spa.spa--ref .top-bar__links a,
-.spa.spa--ref .top-bar__lang {
+.spa.spa--ref .top-bar__links a {
   background: none;
   border: none;
   cursor: pointer;
@@ -55,9 +54,64 @@
   gap: 6px;
 }
 
-.spa.spa--ref .top-bar__lang svg {
-  width: 14px;
-  height: 14px;
+.spa.spa--ref .top-bar__lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.spa.spa--ref .top-bar__lang-switch__label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  transition: color 0.2s ease;
+}
+
+.spa.spa--ref .top-bar__lang-switch__label.is-active {
+  color: var(--ink);
+}
+
+.spa.spa--ref .top-bar__lang-switch__track {
+  position: relative;
+  width: 42px;
+  height: 22px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--mn-bg-hover);
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.spa.spa--ref .top-bar__lang-switch__track.is-en {
+  background: color-mix(in srgb, var(--olive) 18%, var(--mn-bg-hover));
+  border-color: color-mix(in srgb, var(--olive) 35%, var(--line));
+}
+
+.spa.spa--ref .top-bar__lang-switch__track:focus-visible {
+  outline: 2px solid var(--olive);
+  outline-offset: 2px;
+}
+
+.spa.spa--ref .top-bar__lang-switch__thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--mn-surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  transition: transform 0.2s ease;
+}
+
+.spa.spa--ref .top-bar__lang-switch__track.is-en .top-bar__lang-switch__thumb {
+  transform: translateX(20px);
+  background: var(--olive);
 }
 
 .spa.spa--ref .top-bar__signup {
@@ -337,6 +391,173 @@
   letter-spacing: -0.02em;
 }
 
+.spa.spa--ref .google-map-section {
+  padding: 56px 0 64px;
+  background: var(--mn-bg);
+}
+
+.spa.spa--ref .google-map-section__inner {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.spa.spa--ref .google-map-section__head {
+  max-width: 42ch;
+}
+
+.spa.spa--ref .google-map-section h2 {
+  font-family: inherit;
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+.spa.spa--ref .google-map-section__sub {
+  margin-top: 10px;
+  font-size: 0.92rem;
+  color: var(--mn-ink-soft);
+  line-height: 1.55;
+}
+
+.spa.spa--ref .google-map-section__grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(0, 1.15fr);
+  gap: 28px;
+  align-items: stretch;
+}
+
+.spa.spa--ref .google-map-section__reviews {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.spa.spa--ref .google-map-section__summary {
+  padding: 16px 18px;
+  border: 1px solid var(--mn-border);
+  border-radius: var(--mn-radius-lg);
+  background: var(--mn-surface);
+}
+
+.spa.spa--ref .google-map-section__score {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+.spa.spa--ref .google-map-section__score-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--mn-ink);
+  line-height: 1;
+}
+
+.spa.spa--ref .google-map-section__stars {
+  display: inline-flex;
+  gap: 2px;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.spa.spa--ref .google-map-section__star {
+  color: var(--mn-border-strong);
+}
+
+.spa.spa--ref .google-map-section__star--on {
+  color: #eab308;
+}
+
+.spa.spa--ref .google-map-section__count {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  color: var(--mn-ink-soft);
+}
+
+.spa.spa--ref .google-map-section__review-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.spa.spa--ref .google-map-section__review-card {
+  padding: 14px 16px;
+  border: 1px solid var(--mn-border);
+  border-radius: var(--mn-radius-lg);
+  background: var(--mn-surface);
+}
+
+.spa.spa--ref .google-map-section__review-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 8px;
+}
+
+.spa.spa--ref .google-map-section__review-author {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--mn-ink);
+}
+
+.spa.spa--ref .google-map-section__review-text {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--mn-ink-soft);
+}
+
+.spa.spa--ref .google-map-section__review-when {
+  margin: 8px 0 0;
+  font-size: 0.75rem;
+  color: var(--mn-ink-muted);
+}
+
+.spa.spa--ref .google-map-section__source {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--mn-ink-muted);
+  line-height: 1.45;
+}
+
+.spa.spa--ref .google-map-section__map {
+  width: 100%;
+  min-height: 100%;
+  border: 1px solid var(--mn-border);
+  border-radius: var(--mn-radius-lg);
+  overflow: hidden;
+  background: var(--mn-surface);
+}
+
+.spa.spa--ref .google-map-section__frame {
+  display: block;
+  width: 100%;
+  min-height: 360px;
+  height: min(52vh, 480px);
+  border: 0;
+}
+
+.spa.spa--ref .google-map-section__actions {
+  margin: 0;
+}
+
+.spa.spa--ref .google-map-section__link {
+  font-weight: 600;
+  color: var(--mn-primary);
+  text-decoration: none;
+}
+
+.spa.spa--ref .google-map-section__link:hover {
+  color: var(--mn-primary-hover);
+  text-decoration: underline;
+}
+
 .spa.spa--ref .support-section__sub {
   color: var(--ink-soft);
   font-size: 0.95rem;
@@ -439,6 +660,10 @@
   }
 
   .spa.spa--ref .highlight-section__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .spa.spa--ref .google-map-section__grid {
     grid-template-columns: 1fr;
   }
 

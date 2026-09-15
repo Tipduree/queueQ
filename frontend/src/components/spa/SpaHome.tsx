@@ -2,6 +2,7 @@
 
 import { AnnouncementBar } from "@/components/spa/AnnouncementBar";
 import { FeatureStrip } from "@/components/spa/FeatureStrip";
+import { GoogleMapsEmbedSection } from "@/components/spa/GoogleMapsEmbedSection";
 import { Footer } from "@/components/spa/Footer";
 import { Header } from "@/components/spa/Header";
 import { Hero } from "@/components/spa/Hero";
@@ -42,6 +43,7 @@ export function SpaHome({ mode = "landing" }: SpaHomeProps) {
           <SupportSection />
           <HighlightSection />
           <ServicesSection mode={mode} />
+          {isBooking ? null : <GoogleMapsEmbedSection />}
           {/* <PopularTreatments mode={mode} /> */}
           <Footer mode={mode} />
           {!isBooking ? <LineFloatButton /> : null}

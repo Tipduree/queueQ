@@ -3,6 +3,8 @@
 import { I18n } from "@/components/spa/I18n";
 import { useLanguage } from "@/components/spa/LanguageProvider";
 import { useQueue } from "@/components/spa/queue/QueueProvider";
+import { getServiceImageSrc } from "@/lib/spa/service-category-images";
+import Image from "next/image";
 import type { CSSProperties } from "react";
 import { useEffect } from "react";
 
@@ -74,7 +76,9 @@ export function ServicesCatalogSidebar({ open, onClose }: ServicesCatalogSidebar
                 <I18n k="cat.catalogSub" />
               </p>
               <ul className="services-catalog__list">
-                {services.map((service) => (
+                {services.map((service) => {
+                  const imageSrc = getServiceImageSrc(service.id);
+                  return (
                   <li
                     key={service.id}
                     className="services-catalog__item"
@@ -85,7 +89,20 @@ export function ServicesCatalogSidebar({ open, onClose }: ServicesCatalogSidebar
                       } as CSSProperties
                     }
                   >
-                    <span className="services-catalog__swatch" aria-hidden="true" />
+                    <span
+                      className={`services-catalog__swatch${imageSrc ? " services-catalog__swatch--photo" : ""}`}
+                      aria-hidden="true"
+                    >
+                      {imageSrc ? (
+                        <Image
+                          src={imageSrc}
+                          alt=""
+                          fill
+                          sizes="44px"
+                          className="services-catalog__photo"
+                        />
+                      ) : null}
+                    </span>
                     <span className="services-catalog__info">
                       <strong>{t(service.nameKey)}</strong>
                       <span>
@@ -93,7 +110,8 @@ export function ServicesCatalogSidebar({ open, onClose }: ServicesCatalogSidebar
                       </span>
                     </span>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             </>
           )}

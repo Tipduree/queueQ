@@ -578,6 +578,16 @@
   );
 }
 
+.services-catalog__swatch--photo {
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+}
+
+.services-catalog__photo {
+  object-fit: cover;
+}
+
 .services-catalog__info {
   display: flex;
   flex-direction: column;

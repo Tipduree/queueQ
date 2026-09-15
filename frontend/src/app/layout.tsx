@@ -1,12 +1,6 @@
 import type { Metadata } from "next";
-import { Kanit, Roboto } from "next/font/google";
+import { Kanit } from "next/font/google";
 import "./globals.css";
-
-const roboto = Roboto({
-  weight: ["300", "400", "500", "600", "700"],
-  subsets: ["latin"],
-  variable: "--font-roboto",
-});
 
 const kanit = Kanit({
   weight: ["300", "400", "500", "600", "700"],
@@ -22,7 +16,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="th" className={`${roboto.variable} ${kanit.variable}`}>
+    <html lang="th" className={kanit.variable}>
       <body className="spa lang-th">{children}</body>
     </html>
   );

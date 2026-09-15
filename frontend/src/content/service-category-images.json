@@ -1,0 +1,9 @@
+{
+  "_readme": "key = slug บริการ (ตรง backend/prisma/seed.ts และ GET /services). path ใต้ public/ หรือ URL https",
+  "thai-traditional": "/images/services/thai-massage.jpg",
+  "aromatherapy": "/images/services/aroma-oil.jpg",
+  "foot-massage": "/images/services/foot-massage.jpg",
+  "herbal-scrub": "/images/services/herbal-srcub.png",
+  "hot-stone": "/images/services/hot-stone-massage.jpg",
+  "prenatal": "/images/services/pregnant-massage.jpg"
+}

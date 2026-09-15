@@ -16,6 +16,7 @@ import {
   type LinkedBookingSummary,
 } from "@/lib/admin/labels";
 import { TIME_SLOTS, toDateString } from "@/lib/queue/types";
+import { LineIcon } from "@/components/spa/line/LineIcon";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -42,6 +43,12 @@ function formatDateLabel(isoDate: string): string {
     month: "short",
     year: "numeric",
   });
+}
+
+function formatServices(booking: AdminBookingRecord): string {
+  return booking.items
+    .map((item) => `${serviceLabel(item.service.nameKey)} · ${item.service.durationMin} นาที`)
+    .join(", ");
 }
 
 export function AdminBookingsClient() {
@@ -233,136 +240,136 @@ export function AdminBookingsClient() {
               const isBusy = busyId === booking.id;
               const canManage = isPending;
 
+              const whenLabel = canManage
+                ? `${formatDateLabel(draft.date)} · ${draft.time}`
+                : `${formatDateLabel(booking.bookingDate)} · ${booking.timeSlot}`;
+
               return (
-                <article
-                  key={booking.id}
-                  className={`admin-card admin-booking${isPending ? " admin-booking--pending" : ""}`}
-                >
-                  <div className="admin-booking__top">
-                    <div>
-                      <span className="admin-booking__queue">{booking.queueNumber}</span>
-                      <span className={`admin-badge admin-badge--${booking.status.toLowerCase()}`}>
+                <article key={booking.id} className="admin-booking-card">
+                  <header className="admin-booking-card__header">
+                    <div className="admin-booking-card__meta">
+                      <span
+                        className={`admin-booking-card__badge admin-booking-card__badge--${booking.status.toLowerCase()}`}
+                      >
                         {STATUS_LABELS[booking.status]}
                       </span>
+                      <span className="admin-booking-card__id">Booking #{booking.queueNumber}</span>
                     </div>
-                    <p className="admin-booking__when">
-                      {formatDateLabel(booking.bookingDate)} · {booking.timeSlot}
-                    </p>
+                    {booking.lineUserId ? (
+                      <Link
+                        href={`/admin/chat?lineUserId=${encodeURIComponent(booking.lineUserId)}`}
+                        className="admin-booking-card__line-btn mb-2"
+                      >
+                        <LineIcon />
+                        แชท LINE
+                      </Link>
+                    ) : null}
+                  </header>
+
+                  <div className="admin-booking-card__grid">
+                    <div className="admin-booking-card__field">
+                      <span className="admin-booking-card__label">วันที่และเวลา</span>
+                      <span className="admin-booking-card__value">{whenLabel}</span>
+                    </div>
+                    <div className="admin-booking-card__field">
+                      <span className="admin-booking-card__label">บริการ</span>
+                      <span className="admin-booking-card__value">{formatServices(booking)}</span>
+                    </div>
+                    <div className="admin-booking-card__field">
+                      <span className="admin-booking-card__label">ลูกค้า</span>
+                      <span className="admin-booking-card__value">{booking.guestName}</span>
+                      <a className="admin-booking-card__sub" href={`tel:${booking.guestPhone}`}>
+                        {booking.guestPhone}
+                      </a>
+                    </div>
+                    <div className="admin-booking-card__field">
+                      <span className="admin-booking-card__label">จำนวน / ราคา</span>
+                      <span className="admin-booking-card__value">
+                        จำนวน {booking.guestCount} ท่าน · {booking.totalPrice.toLocaleString()} ฿
+                      </span>
+                    </div>
                   </div>
 
-                  {isPending ? (
-                    <div className="admin-contact">
-                      <p className="admin-contact__title">ข้อมูลติดต่อลูกค้า (โทรกลับ / เลื่อนเวลา)</p>
-                      <p>
-                        <strong>{booking.guestName}</strong>
-                      </p>
-                      <p>
-                        <a href={`tel:${booking.guestPhone}`}>{booking.guestPhone}</a>
-                      </p>
-                      <p>
-                        จำนวน {booking.guestCount} ท่าน · {booking.totalPrice.toLocaleString()} ฿
-                      </p>
-                      {booking.notes ? <p className="admin-muted">หมายเหตุ: {booking.notes}</p> : null}
-                      {booking.lineUserId ? (
-                        <Link
-                          href={`/admin/chat?lineUserId=${encodeURIComponent(booking.lineUserId)}`}
-                          className="admin-btn admin-btn--ghost admin-booking__chat-link"
-                        >
-                          แชท LINE
-                        </Link>
-                      ) : null}
-                    </div>
-                  ) : (
-                    <p>
-                      {booking.guestName} · {booking.guestPhone} · {booking.guestCount} ท่าน
-                    </p>
-                  )}
-
-                  <ul className="admin-services">
-                    {booking.items.map((item) => (
-                      <li key={`${booking.id}-${item.service.slug}`}>
-                        {serviceLabel(item.service.nameKey)} · {item.service.durationMin} นาที
-                      </li>
-                    ))}
-                  </ul>
-
-                  {booking.status === "CONFIRMED" ? (
-                    <p className="admin-muted">ยืนยันแล้ว — ไม่ต้องดำเนินการเพิ่ม</p>
+                  {booking.notes ? (
+                    <p className="admin-booking-card__notes">หมายเหตุ: {booking.notes}</p>
                   ) : null}
 
                   {canManage ? (
-                    <div className="admin-schedule">
-                      <p className="admin-schedule__label">
-                        แก้ไขวัน/เวลา (กดยืนยันเพื่อบันทึกและยืนยันคิว)
-                      </p>
-                      <div className="admin-schedule__fields">
-                        <input
-                          type="date"
-                          value={draft.date}
-                          onChange={(e) =>
-                            setScheduleDraft((prev) => ({
-                              ...prev,
-                              [booking.id]: { ...draft, date: e.target.value },
-                            }))
-                          }
-                        />
-                        <select
-                          value={draft.time}
-                          onChange={(e) =>
-                            setScheduleDraft((prev) => ({
-                              ...prev,
-                              [booking.id]: { ...draft, time: e.target.value },
-                            }))
-                          }
-                        >
-                          {TIME_SLOTS.map((slot) => (
-                            <option key={slot} value={slot}>
-                              {slot}
-                            </option>
-                          ))}
-                        </select>
+                    <div className="admin-booking-card__schedule">
+                      <span className="admin-booking-card__label">แก้ไขวัน/เวลา</span>
+                      <div className="admin-booking-card__schedule-row">
+                        <div className="admin-booking-card__schedule-fields">
+                          <input
+                            type="date"
+                            value={draft.date}
+                            aria-label="วันที่จอง"
+                            onChange={(e) =>
+                              setScheduleDraft((prev) => ({
+                                ...prev,
+                                [booking.id]: { ...draft, date: e.target.value },
+                              }))
+                            }
+                          />
+                          <select
+                            value={draft.time}
+                            aria-label="เวลาจอง"
+                            onChange={(e) =>
+                              setScheduleDraft((prev) => ({
+                                ...prev,
+                                [booking.id]: { ...draft, time: e.target.value },
+                              }))
+                            }
+                          >
+                            {TIME_SLOTS.map((slot) => (
+                              <option key={slot} value={slot}>
+                                {slot}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="admin-booking-card__actions">
+                          <button
+                            type="button"
+                            className="admin-booking-card__btn admin-booking-card__btn--ghost"
+                            disabled={isBusy}
+                            onClick={() =>
+                              void runAction(booking.id, () =>
+                                updateAdminBookingStatusWithSchedule(
+                                  booking,
+                                  "CANCELLED",
+                                  draft.date,
+                                  draft.time,
+                                  true,
+                                ),
+                              )
+                            }
+                          >
+                            ยกเลิก
+                          </button>
+                          <button
+                            type="button"
+                            className="admin-booking-card__btn admin-booking-card__btn--primary"
+                            disabled={isBusy}
+                            onClick={() =>
+                              void runAction(booking.id, () =>
+                                updateAdminBookingStatusWithSchedule(
+                                  booking,
+                                  "CONFIRMED",
+                                  draft.date,
+                                  draft.time,
+                                  true,
+                                ),
+                              )
+                            }
+                          >
+                            ยืนยัน
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  ) : null}
-
-                  {canManage ? (
-                    <div className="admin-actions">
-                      <button
-                        type="button"
-                        className="admin-btn admin-btn--primary"
-                        disabled={isBusy}
-                        onClick={() =>
-                          void runAction(booking.id, () =>
-                            updateAdminBookingStatusWithSchedule(
-                              booking,
-                              "CONFIRMED",
-                              draft.date,
-                              draft.time,
-                              true,
-                            ),
-                          )
-                        }
-                      >
-                        ยืนยัน
-                      </button>
-                      <button
-                        type="button"
-                        className="admin-btn admin-btn--danger"
-                        disabled={isBusy}
-                        onClick={() =>
-                          void runAction(booking.id, () =>
-                            updateAdminBookingStatusWithSchedule(
-                              booking,
-                              "CANCELLED",
-                              draft.date,
-                              draft.time,
-                              true,
-                            ),
-                          )
-                        }
-                      >
-                        ยกเลิก
-                      </button>
+                  ) : booking.status === "CONFIRMED" ? (
+                    <div className="admin-booking-card__note-bar">
+                      <p className="admin-booking-card__status-note">ยืนยันแล้ว — ไม่ต้องดำเนินการเพิ่ม</p>
                     </div>
                   ) : null}
                 </article>

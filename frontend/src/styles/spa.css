@@ -20,13 +20,11 @@ html {
 body.spa {
   background: var(--bg);
   color: var(--ink);
-  font-family: var(--font-roboto), sans-serif;
+  font-family: var(--font-kanit), system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
   line-height: 1.6;
   overflow-x: hidden;
-}
-
-body.spa.lang-th {
-  font-family: var(--font-kanit), sans-serif;
 }
 
 body.spa a {
@@ -110,10 +108,6 @@ body.spa img {
   font-size: 1.5rem;
   font-weight: 700;
   letter-spacing: 0.18em;
-}
-
-body.spa.lang-th .spa .logo .word {
-  letter-spacing: 0.05em;
 }
 
 .spa .logo small {
@@ -443,6 +437,22 @@ body.spa.lang-th .spa .logo .word {
   gap: 22px;
 }
 
+.spa .cat-grid--landing {
+  display: none;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(14px, 1.8vw, 22px);
+}
+
+@media (min-width: 1024px) {
+  .spa .cat-grid--landing {
+    display: grid;
+  }
+
+  .spa .cat-carousel-embla--compact {
+    display: none;
+  }
+}
+
 .spa .cat-carousel {
   grid-auto-columns: min(260px, 72vw);
   scroll-snap-type: x mandatory;
@@ -477,13 +487,55 @@ body.spa.lang-th .spa .logo .word {
   padding: 0 44px;
 }
 
+.spa .cat-carousel-embla--compact {
+  padding: 0 32px;
+}
+
+.spa .cat-carousel-embla--compact .cat-card--static .thumb {
+  aspect-ratio: 1 / 1.05;
+  min-height: 0;
+  max-height: clamp(160px, 36vw, 220px);
+  margin-bottom: 10px;
+  border-radius: var(--radius);
+}
+
+.spa .cat-carousel-embla--compact .cat-card--static h3 {
+  font-size: 0.9rem;
+}
+
+.spa .cat-grid--landing .cat-card--static .thumb {
+  aspect-ratio: 1 / 1.05;
+  min-height: 0;
+  margin-bottom: 12px;
+  border-radius: 16px;
+}
+
+.spa .cat-grid--landing .cat-card--static h3 {
+  font-size: clamp(0.88rem, 1.1vw, 0.98rem);
+}
+
+.spa .cat-grid--landing .cat-card--carousel {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  width: 100%;
+}
+
+.spa .cat-grid--landing .cat-card--carousel:hover .thumb {
+  border-color: var(--mn-border-strong);
+}
+
 .spa .cat-carousel-embla [data-slot="carousel-content"] > div {
   transition: transform 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .spa .cat-carousel__nav {
   position: absolute;
-  top: 38%;
+  top: 42%;
   z-index: 2;
   display: inline-flex;
   align-items: center;
@@ -561,6 +613,15 @@ body.spa.lang-th .spa .logo .word {
 .spa .cat-card .thumb svg {
   width: 46%;
   opacity: 0.8;
+}
+
+.spa .cat-card .thumb--photo {
+  position: relative;
+  padding: 0;
+}
+
+.spa .cat-card .cat-card__photo {
+  object-fit: cover;
 }
 
 .spa .cat-card h3 {
@@ -912,7 +973,7 @@ body.spa.lang-th .spa .logo .word {
   flex-direction: column;
   background: var(--bg);
   color: var(--ink);
-  font-family: var(--font-kanit), sans-serif;
+  font: inherit;
 }
 
 .legal-header {
@@ -943,8 +1004,8 @@ body.spa.lang-th .spa .logo .word {
 }
 
 .legal-brand .word {
-  font-family: var(--font-roboto), sans-serif;
   font-size: 1.1rem;
+  font-weight: 700;
   letter-spacing: 0.12em;
 }
 
@@ -963,8 +1024,8 @@ body.spa.lang-th .spa .logo .word {
 }
 
 .legal-subtitle {
-  font-family: var(--font-roboto), sans-serif;
   font-size: 1rem;
+  font-weight: 400;
   opacity: 0.85;
 }
 
@@ -1000,7 +1061,6 @@ body.spa.lang-th .spa .logo .word {
 }
 
 .legal-section h3 {
-  font-family: var(--font-roboto), sans-serif;
   font-size: 0.82rem;
   font-weight: 500;
   color: var(--ink-soft);
@@ -1036,7 +1096,6 @@ body.spa.lang-th .spa .logo .word {
 }
 
 .legal-block--en {
-  font-family: var(--font-roboto), sans-serif;
   color: var(--ink-soft);
 }
 

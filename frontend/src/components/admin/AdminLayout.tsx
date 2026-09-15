@@ -64,8 +64,17 @@ export function AdminLayout({ children, title, variant = "default" }: AdminLayou
     const collapseAt = 12;
     let listEl: HTMLElement | null = null;
 
+    function getPageScroll() {
+      return (
+        window.scrollY ||
+        document.documentElement.scrollTop ||
+        document.body.scrollTop ||
+        0
+      );
+    }
+
     function updateCollapsed() {
-      const pageScroll = window.scrollY;
+      const pageScroll = getPageScroll();
       const listScroll = listEl?.scrollTop ?? 0;
       setTopbarCollapsed(Math.max(pageScroll, listScroll) > collapseAt);
     }
@@ -93,7 +102,9 @@ export function AdminLayout({ children, title, variant = "default" }: AdminLayou
         bindListScroll();
       });
 
-    observer?.observe(shell, { childList: true, subtree: true });
+    if (observer && shell) {
+      observer.observe(shell, { childList: true, subtree: true });
+    }
 
     return () => {
       window.removeEventListener("scroll", updateCollapsed);
